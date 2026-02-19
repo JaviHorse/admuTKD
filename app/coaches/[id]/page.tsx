@@ -1,6 +1,5 @@
 import { getCoachById } from "@/app/actions/coaches";
 import { getSemesters, getActiveSemester } from "@/app/actions/semesters";
-import { getSessionsInSemester } from "@/lib/computations";
 import { calcTurnout } from "@/lib/computations";
 import SemesterSelector from "@/components/SemesterSelector";
 import Link from "next/link";

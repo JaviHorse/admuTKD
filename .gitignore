@@ -47,6 +47,8 @@ next-env.d.ts
 prisma/dev.db
 *.db
 /app/generated/prisma
+prisma/generated
+prisma/transfer
 node_modules/.prisma
 
 build_output.txt

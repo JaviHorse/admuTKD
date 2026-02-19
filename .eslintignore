@@ -1,0 +1,5 @@
+prisma/generated
+prisma/transfer
+lint_report_post_migration.txt
+node_modules
+.next
