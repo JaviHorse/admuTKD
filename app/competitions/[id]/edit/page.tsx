@@ -107,7 +107,7 @@ export default async function EditCompetitionPage({
         orderBy: { fullName: "asc" },
     });
 
-    const resultsByPlayerId = new Map<string, any>();
+    const resultsByPlayerId = new Map<string, (typeof competition.results)[0]>();
     for (const r of competition.results || []) {
         resultsByPlayerId.set(r.playerId, r);
     }

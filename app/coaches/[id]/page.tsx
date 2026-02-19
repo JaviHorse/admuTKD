@@ -22,10 +22,6 @@ export default async function CoachProfilePage({
     const activeSemester = await getActiveSemester();
     const selectedSemesterId = semesterId || activeSemester?.id || semesters[0]?.id;
 
-    // Get sessions where this coach was present in the selected semester
-    const semesterSessions = selectedSemesterId
-        ? await getSessionsInSemester(selectedSemesterId)
-        : [];
     const coachSessions = selectedSemesterId
         ? coach.sessions
             .filter((sc) => {
@@ -47,7 +43,7 @@ export default async function CoachProfilePage({
     );
     const presentRecords = coachSessions.reduce(
         (sum, session) =>
-            sum + (session.attendance?.filter((r: any) => r.status === "PRESENT").length || 0),
+            sum + (session.attendance?.filter((r) => r.status === "PRESENT").length || 0),
         0
     );
     const attendanceRate = totalRecords > 0 ? presentRecords / totalRecords : 0;
@@ -111,7 +107,7 @@ export default async function CoachProfilePage({
                                     <tbody>
                                         {coachSessions
                                             .sort((a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime())
-                                            .map((session: any) => {
+                                            .map((session) => {
                                                 const turnout = calcTurnout(session.attendance || []);
                                                 return (
                                                     <tr key={session.id} className="clickable">

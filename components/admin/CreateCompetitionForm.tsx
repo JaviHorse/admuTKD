@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createCompetition, upsertCompetitionResults } from "@/app/actions/competitions";
+import { createCompetition, upsertCompetitionResults, type Medal } from "@/app/actions/competitions";
 
 interface CreateCompetitionFormProps {
     players: Array<{ id: string; fullName: string }>;
@@ -18,7 +18,7 @@ export default function CreateCompetitionForm({ players }: CreateCompetitionForm
     const [location, setLocation] = useState("");
     const [notes, setNotes] = useState("");
     const [results, setResults] = useState<
-        Array<{ playerId: string; medal: string; wins: number; matches: number; notes: string }>
+        Array<{ playerId: string; medal: Medal; wins: number; matches: number; notes: string }>
     >(
         players.map((player) => ({
             playerId: player.id,

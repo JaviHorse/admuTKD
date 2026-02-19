@@ -3,7 +3,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { getSessionsInSemester } from "@/lib/computations";
 
 export async function getSessions(semesterId?: string) {
     if (semesterId) {

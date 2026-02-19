@@ -79,7 +79,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                     </div>
                     {session.coaches && session.coaches.length > 0 ? (
                         <div>
-                            {session.coaches.map((sc: any) => (
+                            {session.coaches.map((sc) => (
                                 <div key={sc.id} style={{ marginBottom: 8 }}>
                                     <Link href={`/coaches/${sc.coach.id}`} style={{ color: "var(--text-primary)" }}>
                                         {sc.coach.fullName}

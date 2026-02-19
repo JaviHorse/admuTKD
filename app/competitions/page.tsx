@@ -58,10 +58,10 @@ export default async function CompetitionsPage({
                     </thead>
                     <tbody>
                         {competitions.length > 0 ? (
-                            competitions.map((comp: any) => {
-                                const gold = comp.results?.filter((r: any) => r.medal === "GOLD").length || 0;
-                                const silver = comp.results?.filter((r: any) => r.medal === "SILVER").length || 0;
-                                const bronze = comp.results?.filter((r: any) => r.medal === "BRONZE").length || 0;
+                            competitions.map((comp) => {
+                                const gold = comp.results?.filter((r) => r.medal === "GOLD").length || 0;
+                                const silver = comp.results?.filter((r) => r.medal === "SILVER").length || 0;
+                                const bronze = comp.results?.filter((r) => r.medal === "BRONZE").length || 0;
 
                                 return (
                                     <tr key={comp.id}>

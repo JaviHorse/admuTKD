@@ -6,10 +6,9 @@ import { createSession } from "@/app/actions/sessions";
 
 interface CreateSessionFormProps {
     coaches: Array<{ id: string; fullName: string }>;
-    players: Array<{ id: string; fullName: string }>;
 }
 
-export default function CreateSessionForm({ coaches, players }: CreateSessionFormProps) {
+export default function CreateSessionForm({ coaches }: CreateSessionFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [sessionDate, setSessionDate] = useState(

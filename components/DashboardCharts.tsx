@@ -74,7 +74,7 @@ export default function DashboardCharts({ attendanceTrend, breakdown }: Dashboar
 
                             <Tooltip
                                 cursor={{ stroke: "rgba(255,255,255,0.08)" }}
-                                formatter={(value: any) => [`${Number(value).toFixed(1)}%`, "Attendance"]}
+                                formatter={(value?: number | string) => [`${Number(value || 0).toFixed(1)}%`, "Attendance"]}
                                 contentStyle={{
                                     background: "rgba(10,16,32,0.95)",
                                     border: "1px solid rgba(255,255,255,0.12)",

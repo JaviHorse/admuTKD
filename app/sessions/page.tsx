@@ -67,7 +67,7 @@ export default async function SessionsPage({
                                         <td>{session.location || "—"}</td>
                                         <td>
                                             {session.coaches && session.coaches.length > 0
-                                                ? session.coaches.map((sc: any) => sc.coach.fullName).join(", ")
+                                                ? session.coaches.map((sc) => sc.coach.fullName).join(", ")
                                                 : "—"}
                                         </td>
                                         <td className="text-right">{(turnout * 100).toFixed(1)}%</td>

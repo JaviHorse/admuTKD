@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 interface SearchResult {
     type: "player" | "coach" | "session" | "competition";

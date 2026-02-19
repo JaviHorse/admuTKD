@@ -33,7 +33,7 @@ async function main() {
     });
 
     // Semesters
-    const sem1 = await prisma.semester.upsert({
+    await prisma.semester.upsert({
         where: { id: "sem1-2024" },
         update: {},
         create: {
@@ -45,7 +45,7 @@ async function main() {
         },
     });
 
-    const sem2 = await prisma.semester.upsert({
+    await prisma.semester.upsert({
         where: { id: "sem2-2025" },
         update: {},
         create: {
