@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("VIEWER")
+  createdAt    DateTime @default(now())
+}
+
+model Player {
+  id                 String              @id @default(cuid())
+  fullName           String
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  attendanceRecords  AttendanceRecord[]
+  competitionResults CompetitionResult[]
+}
+
+model Coach {
+  id        String         @id @default(cuid())
+  fullName  String
+  roleTitle String?
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  sessions  SessionCoach[]
+}
+
+model Semester {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id          String             @id @default(cuid())
+  sessionDate DateTime
+  sessionType String             @default("Practice")
+  location    String?
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  attendance  AttendanceRecord[]
+  coaches     SessionCoach[]
+}
+
+model SessionCoach {
+  id        String  @id @default(cuid())
+  sessionId String
+  coachId   String
+  coach     Coach   @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, coachId])
+}
+
+model AttendanceRecord {
+  id        String   @id @default(cuid())
+  sessionId String
+  playerId  String
+  status    String   @default("ABSENT")
+  note      String?
+  updatedAt DateTime @updatedAt
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, playerId])
+}
+
+model Competition {
+  id              String              @id @default(cuid())
+  name            String
+  competitionDate DateTime
+  location        String?
+  notes           String?
+  createdAt       DateTime            @default(now())
+  results         CompetitionResult[]
+}
+
+model CompetitionResult {
+  id            String      @id @default(cuid())
+  competitionId String
+  playerId      String
+  medal         String      @default("NONE")
+  wins          Int         @default(0)
+  matches       Int         @default(0)
+  notes         String?
+  player        Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@unique([competitionId, playerId])
+}
