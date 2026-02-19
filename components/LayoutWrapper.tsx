@@ -20,11 +20,8 @@ export default function LayoutWrapper({ children, session: propSession }: Layout
 
     // Close sidebar when pathname changes
     useEffect(() => {
-        if (isSidebarOpen) {
-            const timeout = setTimeout(() => setIsSidebarOpen(false), 0);
-            return () => clearTimeout(timeout);
-        }
-    }, [pathname, isSidebarOpen]);
+        setIsSidebarOpen(false);
+    }, [pathname]);
 
     // Hide sidebar and app-layout on login page
     if (pathname === "/login") {
