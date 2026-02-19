@@ -112,23 +112,21 @@ export default function Sidebar({ session: propSession, isOpen, onClose }: Sideb
                         <div className="sidebar-user-role">{session?.user?.role || "View Only"}</div>
                     </div>
                 </div>
-                {session ? (
-                    <button
-                        className="btn btn-ghost btn-sm"
-                        style={{ width: "100%", justifyContent: "center" }}
-                        onClick={() => signOut({ callbackUrl: "/login" })}
-                    >
-                        Sign Out
-                    </button>
-                ) : (
-                    <Link
-                        href="/login"
-                        className="btn btn-primary btn-sm"
-                        style={{ width: "100%", justifyContent: "center" }}
-                    >
-                        Sign In / Admin
-                    </Link>
-                )}
+                <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ width: "100%", justifyContent: "center" }}
+                    onClick={() => {
+                        if (session) {
+                            signOut({ callbackUrl: "/login" });
+                        } else {
+                            // Clear guest_access cookie
+                            document.cookie = "guest_access=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                            window.location.href = "/login";
+                        }
+                    }}
+                >
+                    Sign Out
+                </button>
             </div>
         </aside>
     );

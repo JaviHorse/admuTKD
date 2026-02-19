@@ -90,7 +90,11 @@ export default function LoginPage() {
                         type="button"
                         className="btn btn-ghost"
                         style={{ width: "100%", justifyContent: "center", padding: "12px" }}
-                        onClick={() => router.push("/dashboard")}
+                        onClick={() => {
+                            // Set guest_access cookie for 24 hours
+                            document.cookie = "guest_access=true; path=/; max-age=86400";
+                            router.push("/dashboard");
+                        }}
                     >
                         View as Guest
                     </button>
@@ -98,8 +102,8 @@ export default function LoginPage() {
 
                 <div style={{ marginTop: 24, padding: "16px", background: "rgba(255,255,255,0.03)", borderRadius: 8, fontSize: 12, color: "var(--text-secondary)" }}>
                     <div style={{ fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>Demo Accounts</div>
-                    <div>Admins: <span style={{ color: "var(--accent-gold)" }}>Captains + Ate Cams + Sir E</span> </div>
-                    <div style={{ marginTop: 4 }}>Viewer: <span style={{ color: "var(--info)" }}>yall click the view as guest button</span> </div>
+                    <div>Admins: <span style={{ color: "var(--accent-gold)" }}>Captains + Boss Cams </span> </div>
+                    <div style={{ marginTop: 4 }}>How to view: <span style={{ color: "var(--info)" }}>Guest button kayong lahat sino ba kayo</span> </div>
                 </div>
             </div>
         </div>

@@ -4,18 +4,10 @@ import { NextResponse } from "next/server";
 export default auth((req) => {
     const { pathname } = req.nextUrl;
     const session = req.auth;
+    const hasGuestAccess = req.cookies.has("guest_access");
 
-    // Public viewer routes that don't require login
-    const isPublicRoute =
-        pathname === "/dashboard" ||
-        pathname === "/reports" ||
-        pathname.startsWith("/players") ||
-        pathname.startsWith("/coaches") ||
-        pathname.startsWith("/sessions") ||
-        pathname.startsWith("/competitions");
-
-    // Redirect unauthenticated users to login ONLY if they try to access non-public routes
-    if (!session && !isPublicRoute && pathname !== "/login") {
+    // Redirect unauthenticated users to login ONLY if they are NOT on the login page AND don't have guest access
+    if (!session && !hasGuestAccess && pathname !== "/login") {
         return NextResponse.redirect(new URL("/login", req.url));
     }
 
@@ -25,14 +17,10 @@ export default auth((req) => {
         return NextResponse.redirect(new URL(dest, req.url));
     }
 
-    // Block non-admins from /admin routes
-    if (session && pathname.startsWith("/admin") && session.user.role !== "ADMIN") {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-
-    // Block guests from /admin routes
-    if (!session && pathname.startsWith("/admin")) {
-        return NextResponse.redirect(new URL("/login", req.url));
+    // Block ANY unauthenticated access (even guest) from /admin routes
+    if (pathname.startsWith("/admin") && (!session || session.user.role !== "ADMIN")) {
+        const dest = session ? "/dashboard" : "/login";
+        return NextResponse.redirect(new URL(dest, req.url));
     }
 
     return NextResponse.next();
