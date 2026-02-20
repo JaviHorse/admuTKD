@@ -4,6 +4,8 @@ import SemesterSelector from "@/components/SemesterSelector";
 import { formatRate } from "@/lib/computations";
 import { getSessionsInSemester } from "@/lib/computations";
 import DashboardCharts from "@/components/DashboardCharts";
+import UaapCountdown from "@/components/UaapCountdown";
+import { getUaapDate } from "@/app/actions/settings";
 
 export default async function DashboardPage({
     searchParams,
@@ -31,6 +33,7 @@ export default async function DashboardPage({
     const stats = await getTeamAttendanceStats(selectedSemesterId);
     const playerStats = await getPlayerAttendanceStats(selectedSemesterId);
     const sessions = await getSessionsInSemester(selectedSemesterId);
+    const uaapDate = await getUaapDate();
 
     const { prisma } = await import("@/lib/db");
     const sessionIds = sessions.map((s) => s.id);
@@ -85,6 +88,8 @@ export default async function DashboardPage({
                         <SemesterSelector semesters={semesters} selectedId={selectedSemesterId} />
                     </div>
                 </div>
+
+                <UaapCountdown uaapDate={uaapDate} />
 
                 <div className="kpi-grid">
                     <div className="kpi-card">
