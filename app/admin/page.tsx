@@ -53,6 +53,15 @@ export default function AdminDashboardPage() {
                         Create a new competition and enter results
                     </p>
                 </Link>
+
+                <Link href="/admin/settings" className="card" style={{ textDecoration: "none", display: "block" }}>
+                    <div className="card-header">
+                        <div className="card-title">⚙️ Settings</div>
+                    </div>
+                    <p className="text-muted" style={{ marginTop: 8 }}>
+                        Set the UAAP event date and other app settings
+                    </p>
+                </Link>
             </div>
         </div>
     );

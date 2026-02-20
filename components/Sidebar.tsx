@@ -46,6 +46,7 @@ const adminItems = [
             { href: "/admin/coaches", label: "Manage Coaches", icon: "✏️" },
             { href: "/admin/sessions/new", label: "New Session", icon: "➕" },
             { href: "/admin/competitions/new", label: "New Competition", icon: "➕" },
+            { href: "/admin/settings", label: "UAAP Settings", icon: "🏆" },
         ],
     },
 ];

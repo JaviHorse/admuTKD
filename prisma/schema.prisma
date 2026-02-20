@@ -101,3 +101,9 @@ model CompetitionResult {
 
   @@unique([competitionId, playerId])
 }
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
