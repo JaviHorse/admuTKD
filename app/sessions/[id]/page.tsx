@@ -37,9 +37,14 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                         </p>
                     </div>
                     {isAdmin && (
-                        <Link href={`/admin/sessions/${session.id}/attendance`} className="btn btn-primary">
-                            Mark Attendance
-                        </Link>
+                        <div className="flex-gap">
+                            <Link href={`/admin/sessions/${session.id}/edit`} className="btn btn-ghost">
+                                Edit Session
+                            </Link>
+                            <Link href={`/admin/sessions/${session.id}/attendance`} className="btn btn-primary">
+                                Mark Attendance
+                            </Link>
+                        </div>
                     )}
                 </div>
             </div>

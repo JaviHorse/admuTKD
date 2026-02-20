@@ -2,22 +2,34 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSession } from "@/app/actions/sessions";
+import { createSession, updateSession } from "@/app/actions/sessions";
 
-interface CreateSessionFormProps {
+interface SessionFormProps {
     coaches: Array<{ id: string; fullName: string }>;
+    initialData?: {
+        id: string;
+        sessionDate: Date;
+        sessionType: string;
+        location: string | null;
+        notes: string | null;
+        coaches: Array<{ coachId: string }>;
+    };
 }
 
-export default function CreateSessionForm({ coaches }: CreateSessionFormProps) {
+export default function SessionForm({ coaches, initialData }: SessionFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [sessionDate, setSessionDate] = useState(
-        new Date().toISOString().split("T")[0]
+        initialData
+            ? new Date(initialData.sessionDate).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0]
     );
-    const [sessionType, setSessionType] = useState("Practice");
-    const [location, setLocation] = useState("");
-    const [notes, setNotes] = useState("");
-    const [selectedCoaches, setSelectedCoaches] = useState<string[]>([]);
+    const [sessionType, setSessionType] = useState(initialData?.sessionType || "Practice");
+    const [location, setLocation] = useState(initialData?.location || "");
+    const [notes, setNotes] = useState(initialData?.notes || "");
+    const [selectedCoaches, setSelectedCoaches] = useState<string[]>(
+        initialData?.coaches.map(sc => sc.coachId) || []
+    );
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -34,14 +46,25 @@ export default function CreateSessionForm({ coaches }: CreateSessionFormProps) {
                 return;
             }
 
-            const session = await createSession({
-                sessionDate: dateObj,
-                sessionType,
-                location: location || undefined,
-                notes: notes || undefined,
-                coachIds: selectedCoaches,
-            });
-            router.push(`/admin/sessions/${session.id}/attendance`);
+            if (initialData) {
+                await updateSession(initialData.id, {
+                    sessionDate: dateObj,
+                    sessionType,
+                    location: location || undefined,
+                    notes: notes || undefined,
+                    coachIds: selectedCoaches,
+                });
+                router.push(`/sessions/${initialData.id}`);
+            } else {
+                const session = await createSession({
+                    sessionDate: dateObj,
+                    sessionType,
+                    location: location || undefined,
+                    notes: notes || undefined,
+                    coachIds: selectedCoaches,
+                });
+                router.push(`/admin/sessions/${session.id}/attendance`);
+            }
         } catch (error) {
             alert("Error: " + (error instanceof Error ? error.message : "Unknown error"));
             setLoading(false);
@@ -133,7 +156,7 @@ export default function CreateSessionForm({ coaches }: CreateSessionFormProps) {
                 />
             </div>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? "Creating..." : "Create Session & Mark Attendance"}
+                {loading ? "Saving..." : initialData ? "Update Session" : "Create Session & Mark Attendance"}
             </button>
         </form>
     );

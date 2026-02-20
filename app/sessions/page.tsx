@@ -45,7 +45,7 @@ export default async function SessionsPage({
                             <th>Location</th>
                             <th>Coaches</th>
                             <th className="text-right">Turnout %</th>
-                            {isAdmin && <th className="text-right">Actions</th>}
+                            <th className="text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -53,7 +53,7 @@ export default async function SessionsPage({
                             sessions.map((session) => {
                                 const turnout = calcTurnout(session.attendance || []);
                                 return (
-                                    <tr key={session.id} className="clickable">
+                                    <tr key={session.id}>
                                         <td>
                                             <Link href={`/sessions/${session.id}`}>
                                                 {new Date(session.sessionDate).toLocaleDateString("en-US", {
@@ -71,17 +71,27 @@ export default async function SessionsPage({
                                                 : "—"}
                                         </td>
                                         <td className="text-right">{(turnout * 100).toFixed(1)}%</td>
-                                        {isAdmin && (
-                                            <td className="text-right">
-                                                <DeleteSessionButton sessionId={session.id} />
-                                            </td>
-                                        )}
+                                        <td className="text-right">
+                                            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                                                <Link href={`/sessions/${session.id}`} className="btn btn-sm btn-ghost">
+                                                    View
+                                                </Link>
+                                                {isAdmin && (
+                                                    <>
+                                                        <Link href={`/admin/sessions/${session.id}/edit`} className="btn btn-sm btn-ghost">
+                                                            Edit
+                                                        </Link>
+                                                        <DeleteSessionButton sessionId={session.id} />
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
                                     </tr>
                                 );
                             })
                         ) : (
                             <tr>
-                                <td colSpan={isAdmin ? 6 : 5} className="empty-state" style={{ padding: "48px" }}>
+                                <td colSpan={6} className="empty-state" style={{ padding: "48px" }}>
                                     <div className="empty-state-icon">📅</div>
                                     <div className="empty-state-text">No sessions found</div>
                                 </td>

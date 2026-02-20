@@ -1,6 +1,6 @@
 import { getCoaches } from "@/app/actions/coaches";
 import Link from "next/link";
-import CreateSessionForm from "@/components/admin/CreateSessionForm";
+import SessionForm from "@/components/admin/SessionForm";
 
 export default async function CreateSessionPage() {
     const coaches = await getCoaches(true);
@@ -20,7 +20,7 @@ export default async function CreateSessionPage() {
             </div>
 
             <div className="card">
-                <CreateSessionForm coaches={coaches} />
+                <SessionForm coaches={coaches} />
             </div>
         </div>
     );
