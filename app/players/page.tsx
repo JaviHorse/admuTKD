@@ -98,7 +98,7 @@ export default async function PlayersPage({
         <div>
             <div className="page-header">
                 <h1 className="page-title">Players</h1>
-                <p className="page-subtitle">Team roster and player statistics</p>
+                <p className="page-subtitle">Team roster and player statistics (click on a player's name to see their individual stats)</p>
             </div>
 
             <PlayersSearch
