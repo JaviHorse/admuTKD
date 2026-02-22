@@ -153,7 +153,7 @@ export default async function ReportsPage({
             <div className="section">
                 <div className="card">
                     <div className="card-header">
-                        <div className="card-title">Results Summary: Click on a player to see their individual stats</div>
+                        <div className="card-title">Results Summary: Click on a player's name to see their individual stats</div>
                     </div>
                     <div className="table-wrap">
                         <table>
