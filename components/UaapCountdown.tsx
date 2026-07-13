@@ -33,7 +33,7 @@ export default function UaapCountdown({ uaapDate, eventName = "UAAP" }: Props) {
     useEffect(() => {
         if (!uaapDate) return;
         const target = new Date(uaapDate);
-        setTimeLeft(calcTimeLeft(target));
+        const initialTimer = window.setTimeout(() => setTimeLeft(calcTimeLeft(target)), 0);
 
         const interval = setInterval(() => {
             const t = calcTimeLeft(target);
@@ -41,7 +41,10 @@ export default function UaapCountdown({ uaapDate, eventName = "UAAP" }: Props) {
             if (t.total <= 0) clearInterval(interval);
         }, 1000);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(interval);
+        };
     }, [uaapDate]);
 
     if (!uaapDate) return null;

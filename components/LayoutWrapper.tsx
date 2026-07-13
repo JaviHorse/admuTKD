@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import MobileHeader from "./MobileHeader";
 import Sidebar from "./Sidebar";
 import type { Session } from "next-auth";
@@ -17,11 +17,6 @@ export default function LayoutWrapper({ children, session: propSession }: Layout
     const session = clientSession || propSession;
     const pathname = usePathname();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    // Close sidebar when pathname changes
-    useEffect(() => {
-        setIsSidebarOpen(false);
-    }, [pathname]);
 
     // Hide sidebar and app-layout on login page
     if (pathname === "/login") {
