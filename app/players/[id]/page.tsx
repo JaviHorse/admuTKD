@@ -213,3 +213,4 @@ export default async function PlayerProfilePage({
         </div>
     );
 }
+

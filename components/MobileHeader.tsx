@@ -1,27 +1,17 @@
 "use client";
 
-import React from "react";
+import Image from "next/image";
 
-interface MobileHeaderProps {
-    onMenuClick: () => void;
-}
-
-const MobileHeader: React.FC<MobileHeaderProps> = ({ onMenuClick }) => {
+export default function MobileHeader({ onMenuClick }: { onMenuClick: () => void }) {
     return (
         <header className="mobile-header mobile-only">
-            <div className="flex-center" style={{ gap: 12 }}>
-                <span style={{ fontSize: 24 }}>🥋</span>
-                <span className="sidebar-logo-title" style={{ fontSize: 16 }}>ADMU TKD</span>
+            <div className="mobile-brand">
+                <Image src="/ATKD.jpg" alt="Ateneo Taekwondo Team" width={36} height={36} className="brand-mark" />
+                <div><span className="sidebar-logo-title">ADMU TKD</span><small>Team command center</small></div>
             </div>
-            <button
-                className="hamburger"
-                onClick={onMenuClick}
-                aria-label="Open Menu"
-            >
-                <span>☰</span>
+            <button className="hamburger" onClick={onMenuClick} aria-label="Open menu">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
             </button>
         </header>
     );
-};
-
-export default MobileHeader;
+}

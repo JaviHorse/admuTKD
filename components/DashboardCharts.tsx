@@ -55,32 +55,32 @@ export default function DashboardCharts({ attendanceTrend, breakdown }: Dashboar
                                 </linearGradient>
                             </defs>
 
-                            <CartesianGrid strokeDasharray="3 6" stroke="rgba(255,255,255,0.06)" />
+                            <CartesianGrid strokeDasharray="3 6" stroke="#e5eaf1" />
 
                             <XAxis
                                 dataKey="date"
-                                stroke="rgba(255,255,255,0.45)"
-                                tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
+                                stroke="#8290a4"
+                                tick={{ fill: "#718096", fontSize: 12 }}
                                 axisLine={false}
                                 tickLine={false}
                             />
 
                             <YAxis
-                                stroke="rgba(255,255,255,0.45)"
-                                tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
+                                stroke="#8290a4"
+                                tick={{ fill: "#718096", fontSize: 12 }}
                                 axisLine={false}
                                 tickLine={false}
                             />
 
                             <Tooltip
-                                cursor={{ stroke: "rgba(255,255,255,0.08)" }}
+                                cursor={{ stroke: "#dfe6ef" }}
                                 formatter={(value?: number | string) => [`${Number(value || 0).toFixed(1)}%`, "Attendance"]}
                                 contentStyle={{
-                                    background: "rgba(10,16,32,0.95)",
-                                    border: "1px solid rgba(255,255,255,0.12)",
+                                    background: "#ffffff",
+                                    border: "1px solid #dfe6ef",
                                     borderRadius: "12px",
                                     boxShadow: "0 20px 40px rgba(0,0,0,0.35)",
-                                    color: "white",
+                                    color: "#10213d",
                                 }}
                                 labelStyle={{
                                     fontWeight: 700,
@@ -96,7 +96,7 @@ export default function DashboardCharts({ attendanceTrend, breakdown }: Dashboar
                                 dot={{
                                     r: 4,
                                     strokeWidth: 2,
-                                    fill: "#0b0f19",
+                                    fill: "#ffffff",
                                 }}
                                 activeDot={{
                                     r: 6,
@@ -117,31 +117,31 @@ export default function DashboardCharts({ attendanceTrend, breakdown }: Dashboar
                 <div style={{ height: 260 }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={breakdownData}>
-                            <CartesianGrid strokeDasharray="3 6" stroke="rgba(255,255,255,0.06)" />
+                            <CartesianGrid strokeDasharray="3 6" stroke="#e5eaf1" />
 
                             <XAxis
                                 dataKey="name"
-                                stroke="rgba(255,255,255,0.45)"
-                                tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
+                                stroke="#8290a4"
+                                tick={{ fill: "#718096", fontSize: 12 }}
                                 axisLine={false}
                                 tickLine={false}
                             />
 
                             <YAxis
-                                stroke="rgba(255,255,255,0.45)"
-                                tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
+                                stroke="#8290a4"
+                                tick={{ fill: "#718096", fontSize: 12 }}
                                 axisLine={false}
                                 tickLine={false}
                             />
 
                             <Tooltip
-                                cursor={{ fill: "rgba(255,255,255,0.05)" }}
+                                cursor={{ fill: "#f2f5f9" }}
                                 contentStyle={{
-                                    background: "rgba(10,16,32,0.95)",
-                                    border: "1px solid rgba(255,255,255,0.12)",
+                                    background: "#ffffff",
+                                    border: "1px solid #dfe6ef",
                                     borderRadius: "12px",
                                     boxShadow: "0 20px 40px rgba(0,0,0,0.35)",
-                                    color: "white",
+                                    color: "#10213d",
                                 }}
                                 labelStyle={{
                                     fontWeight: 700,
@@ -161,3 +161,4 @@ export default function DashboardCharts({ attendanceTrend, breakdown }: Dashboar
         </div>
     );
 }
+
