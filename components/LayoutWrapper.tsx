@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 import MobileHeader from "./MobileHeader";
 import Sidebar from "./Sidebar";
+import AppTopbar from "./AppTopbar";
 import type { Session } from "next-auth";
 
 interface LayoutWrapperProps {
@@ -36,7 +37,10 @@ export default function LayoutWrapper({ children, session: propSession }: Layout
                     isOpen={isSidebarOpen}
                     onClose={() => setIsSidebarOpen(false)}
                 />
-                <main className="main-content">{children}</main>
+                <div className="content-shell">
+                    <AppTopbar session={session} />
+                    <main className="main-content">{children}</main>
+                </div>
             </div>
         </div>
     );

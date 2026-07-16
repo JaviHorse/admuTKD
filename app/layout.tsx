@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import LayoutWrapper from "@/components/LayoutWrapper";
 
 export const metadata: Metadata = {
-  title: "ADMU TKD — Team Management",
+  title: "ADMU TKD — Performance Hub",
   description: "Ateneo de Manila University Taekwondo Team Management System",
 };
 

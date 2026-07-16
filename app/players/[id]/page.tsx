@@ -49,7 +49,7 @@ export default async function PlayerProfilePage({
 
     return (
         <div>
-            <Link href="/reports" className="back-link">
+            <Link href="/players" className="back-link">
                 ← Back to Reports
             </Link>
 

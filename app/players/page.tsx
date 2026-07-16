@@ -1,164 +1,58 @@
 import { getPlayers } from "@/app/actions/players";
 import { getSemesters, getActiveSemester } from "@/app/actions/semesters";
-import { getPlayerAttendanceStats } from "@/lib/computations";
-import { formatRate, formatWinRate } from "@/lib/computations";
+import { getPlayerAttendanceStats, formatRate, formatWinRate } from "@/lib/computations";
 import Link from "next/link";
 import PlayersSearch from "@/components/PlayersSearch";
 import { prisma } from "@/lib/db";
 
 type Medal = "GOLD" | "SILVER" | "BRONZE" | "NONE";
 
-export default async function PlayersPage({
-    searchParams,
-}: {
-    searchParams: Promise<{ semesterId?: string; search?: string; active?: string }>;
-}) {
+export default async function PlayersPage({ searchParams }: { searchParams: Promise<{ semesterId?: string; search?: string; active?: string }> }) {
     const { semesterId, search, active } = await searchParams;
-    const semesters = await getSemesters();
-    const activeSemester = await getActiveSemester();
+    const [semesters, activeSemester] = await Promise.all([getSemesters(), getActiveSemester()]);
     const selectedSemesterId = semesterId || activeSemester?.id || semesters[0]?.id;
     const activeOnly = active !== "false";
     const searchQuery = search?.toLowerCase() || "";
-
     const players = await getPlayers(!activeOnly);
-
     const attendanceStats = selectedSemesterId ? await getPlayerAttendanceStats(selectedSemesterId) : [];
-
-    const allTimeResults = await prisma.competitionResult.findMany({
-        where: {
-            playerId: { in: players.map((p) => p.id) },
-        },
-        select: {
-            playerId: true,
-            medal: true,
-            wins: true,
-            matches: true,
-        },
-    });
-
-    const allTimeByPlayerId = new Map<
-        string,
-        { gold: number; silver: number; bronze: number; totalWins: number; totalMatches: number; winRate: number | null }
-    >();
-
-    for (const r of allTimeResults) {
-        const medal = String(r.medal || "NONE").toUpperCase() as Medal;
-        const wins = typeof r.wins === "number" ? r.wins : 0;
-        const matches = typeof r.matches === "number" ? r.matches : 0;
-
-        const cur =
-            allTimeByPlayerId.get(r.playerId) || {
-                gold: 0,
-                silver: 0,
-                bronze: 0,
-                totalWins: 0,
-                totalMatches: 0,
-                winRate: null,
-            };
-
-        if (medal === "GOLD") cur.gold += 1;
-        if (medal === "SILVER") cur.silver += 1;
-        if (medal === "BRONZE") cur.bronze += 1;
-
-        cur.totalWins += wins;
-        cur.totalMatches += matches;
-        cur.winRate = cur.totalMatches > 0 ? cur.totalWins / cur.totalMatches : null;
-
-        allTimeByPlayerId.set(r.playerId, cur);
-    }
+    const results = await prisma.competitionResult.findMany({ where: { playerId: { in: players.map((p) => p.id) } }, select: { playerId: true, medal: true, wins: true, matches: true } });
 
     const playersWithStats = players.map((player) => {
-        const attendance = attendanceStats.find((s) => s.playerId === player.id);
-        const allTime = allTimeByPlayerId.get(player.id) || {
-            gold: 0,
-            silver: 0,
-            bronze: 0,
-            totalWins: 0,
-            totalMatches: 0,
-            winRate: null,
-        };
-
-        return {
-            ...player,
-            attendanceRate: attendance?.rate || 0,
-            medals: {
-                gold: allTime.gold,
-                silver: allTime.silver,
-                bronze: allTime.bronze,
-            },
-            winRate: allTime.winRate,
-        };
+        const attendance = attendanceStats.find((item) => item.playerId === player.id);
+        const playerResults = results.filter((item) => item.playerId === player.id);
+        const medals = { gold: 0, silver: 0, bronze: 0 };
+        let totalWins = 0;
+        let totalMatches = 0;
+        playerResults.forEach((result) => {
+            const medal = String(result.medal || "NONE").toUpperCase() as Medal;
+            if (medal === "GOLD") medals.gold++;
+            if (medal === "SILVER") medals.silver++;
+            if (medal === "BRONZE") medals.bronze++;
+            totalWins += result.wins || 0;
+            totalMatches += result.matches || 0;
+        });
+        return { ...player, attendanceRate: attendance?.rate || 0, attendanceTotal: attendance?.total || 0, medals, totalWins, totalMatches, winRate: totalMatches ? totalWins / totalMatches : null };
     });
+    const filteredPlayers = searchQuery ? playersWithStats.filter((player) => player.fullName.toLowerCase().includes(searchQuery)) : playersWithStats;
+    const schoolYear = semesters.find((item) => item.id === selectedSemesterId)?.name || "All school years";
 
-    const filteredPlayers = searchQuery
-        ? playersWithStats.filter((p) => p.fullName.toLowerCase().includes(searchQuery))
-        : playersWithStats;
-
-    return (
-        <div>
-            <div className="page-header">
-                <h1 className="page-title">Players</h1>
-                <p className="page-subtitle">Team roster and player statistics (click on a player&apos;s name to see their individual stats)</p>
-            </div>
-
-            <PlayersSearch
-                semesters={semesters}
-                selectedSemesterId={selectedSemesterId || ""}
-                initialSearch={searchQuery}
-                activeOnly={activeOnly}
-            />
-
-            <div className="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Player Name</th>
-                            <th className="text-right">Attendance %</th>
-                            <th className="text-right">Medals</th>
-                            <th className="text-right">Win Rate</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredPlayers.length > 0 ? (
-                            filteredPlayers.map((player) => (
-                                <tr key={player.id} className="clickable">
-                                    <td>
-                                        <Link href={`/players/${player.id}?semesterId=${selectedSemesterId || ""}`}>
-                                            {player.fullName}
-                                        </Link>
-                                        {!player.isActive && (
-                                            <span className="badge badge-inactive" style={{ marginLeft: 8 }}>
-                                                Inactive
-                                            </span>
-                                        )}
-                                    </td>
-
-                                    <td className="text-right">
-                                        {selectedSemesterId ? formatRate(player.attendanceRate) : "—"}
-                                    </td>
-
-                                    <td className="text-right">
-                                        <span>
-                                            <span className="medal-gold">🥇{player.medals.gold}</span>{" "}
-                                            <span className="medal-silver">🥈{player.medals.silver}</span>{" "}
-                                            <span className="medal-bronze">🥉{player.medals.bronze}</span>
-                                        </span>
-                                    </td>
-
-                                    <td className="text-right">{formatWinRate(player.winRate)}</td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={4} className="empty-state" style={{ padding: "48px" }}>
-                                    <div className="empty-state-icon">🥋</div>
-                                    <div className="empty-state-text">No players found</div>
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
+    return <div>
+        <header className="compact-page-header"><div><span className="eyebrow">Team roster</span><h1>Players</h1><p><strong>{filteredPlayers.filter((player) => player.isActive).length} active athletes</strong> · {schoolYear}</p></div></header>
+        <PlayersSearch semesters={semesters} selectedSemesterId={selectedSemesterId || ""} initialSearch={searchQuery} activeOnly={activeOnly} />
+        <div className="table-wrap surface"><table><thead><tr><th>Athlete</th><th>Status</th><th>Attendance</th><th>Readiness</th><th>Medals</th><th>Match record</th><th aria-label="Open profile" /></tr></thead>
+            <tbody>{filteredPlayers.length ? filteredPlayers.map((player) => {
+                const profileHref = `/players/${player.id}?semesterId=${selectedSemesterId || ""}`;
+                const initials = player.fullName.split(" ").map((part) => part[0]).join("").slice(0, 2);
+                return <tr key={player.id} className="clickable">
+                    <td><Link className="table-link" href={profileHref}><span className="avatar-initial">{initials}</span>{player.fullName}</Link></td>
+                    <td><span className={`status-chip ${player.isActive ? "status-active" : "status-inactive"}`}>{player.isActive ? "Active" : "Inactive"}</span></td>
+                    <td className="attendance-cell"><div><span>{selectedSemesterId ? formatRate(player.attendanceRate) : "—"}</span><small>{player.attendanceTotal} records</small></div><div className="progress-track"><i style={{ width: `${Math.min(player.attendanceRate * 100, 100)}%` }} /></div></td>
+                    <td>{player.attendanceTotal === 0 ? <span className="status-chip status-neutral">No data</span> : player.attendanceRate >= .75 ? <span className="status-chip status-ready">Ready</span> : player.attendanceRate >= .6 ? <span className="status-chip status-monitor">Monitor</span> : <span className="status-chip status-risk">At risk</span>}</td>
+                    <td><span className="medal-cluster"><span>🥇 {player.medals.gold}</span><span>🥈 {player.medals.silver}</span><span>🥉 {player.medals.bronze}</span></span></td>
+                    <td><span className="record-main">{player.totalWins}–{Math.max(0, player.totalMatches - player.totalWins)}</span><span className="record-sub">{formatWinRate(player.winRate)}</span></td>
+                    <td><Link aria-label={`View ${player.fullName}`} href={profileHref} className="row-chevron">›</Link></td>
+                </tr>;
+            }) : <tr><td colSpan={7} className="empty-state" style={{ padding: 48 }}><div className="empty-state-icon">TKD</div><div className="empty-state-text">No players found</div></td></tr>}</tbody>
+        </table></div>
+    </div>;
 }

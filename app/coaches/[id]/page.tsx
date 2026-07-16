@@ -74,12 +74,12 @@ export default async function CoachProfilePage({
                 <>
                     <div className="card" style={{ marginBottom: 28 }}>
                         <div className="card-header">
-                            <div className="card-title">Coach Impact</div>
+                            <div className="card-title">Assigned-session attendance</div>
                         </div>
                         <div className="stat-row">
                             <div className="stat-item">
                                 <div className="stat-value">{(attendanceRate * 100).toFixed(1)}%</div>
-                                <div className="stat-label">Attendance Rate (Sessions Present)</div>
+                                <div className="stat-label">Average turnout when present</div>
                             </div>
                             <div className="stat-item">
                                 <div className="stat-value">{coachSessions.length}</div>
@@ -106,6 +106,7 @@ export default async function CoachProfilePage({
                                     <tbody>
                                         {coachSessions
                                             .sort((a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime())
+                                            .slice(0, 5)
                                             .map((session) => {
                                                 const turnout = calcTurnout(session.attendance || []);
                                                 return (
