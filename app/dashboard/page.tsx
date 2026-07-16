@@ -61,18 +61,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
     return (
         <div className="dash"><div className="dash-inner">
-            <section className="dashboard-hero">
-                <div className="dashboard-hero-copy"><span className="eyebrow">Team command center</span><h1>Ready for the next round.</h1><p>Training attendance, competition prep, and your team&apos;s next moves in one view.</p></div>
+            <section className="dashboard-hero compact-dashboard-hero">
+                <div className="dashboard-hero-copy"><span className="eyebrow">Performance command center</span><h1>Team Overview</h1><p>{new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric" })} · {selectedSemester?.name || "Current school year"}</p></div>
                 <div className="dashboard-header-tools"><SemesterSelector semesters={semesters} selectedId={selectedSemesterId} />{isAdmin && <div className="quick-actions"><Link href={nextSession ? `/admin/sessions/${nextSession.id}/attendance` : "/admin/sessions/new"} className="btn btn-gold"><Icon><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></Icon>{nextSession ? "Mark attendance" : "Create session"}</Link><Link href="/admin/players" className="btn btn-secondary"><Icon><path d="M12 5v14M5 12h14" /></Icon>Add player</Link></div>}</div>
             </section>
-
-            <div className="quick-filter-row" aria-label="Quick links"><span>Quick view</span><Link href="/sessions">Today</Link><Link href="/sessions">This week</Link><Link href="/players">Active players <b>{activePlayers}</b></Link><Link href="/reports">Needs attention <b>{needsAttention.length}</b></Link></div>
 
             <section className="dashboard-priority-grid">
                 <div className="priority-card priority-card-blue"><div className="priority-icon"><Icon><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></Icon></div><div><span>Team attendance</span><strong>{formatRate(stats.attendanceRate)}</strong><small>Across {stats.totalSessions} training sessions</small></div><div className="mini-progress"><i style={{ width: `${Math.min(stats.attendanceRate * 100, 100)}%` }} /></div></div>
                 <div className="priority-card"><div className="priority-icon"><Icon><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 11h18" /></Icon></div><div><span>Next session</span><strong className="priority-text">{nextSession ? new Date(nextSession.sessionDate).toLocaleDateString("en-PH", { weekday: "short", month: "short", day: "numeric" }) : "Not scheduled"}</strong><small>{nextSession ? `${new Date(nextSession.sessionDate).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" })} · ${nextSession.location || "Location TBA"}` : "Create the next team training session"}</small></div></div>
                 <div className="priority-card priority-card-gold"><div className="priority-icon"><Icon><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z" /><path d="M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4M12 13v4M8 21h8" /></Icon></div><div><span>Competition readiness</span><strong>{formatRate(readinessRate)}</strong><small>{readyPlayers} of {qualifiedPlayers.length} tracked athletes at 75%+ attendance</small></div><div className="mini-progress"><i style={{ width: `${readinessRate * 100}%` }} /></div></div>
-                <div className="priority-card"><div className="priority-icon"><Icon><circle cx="12" cy="8" r="4" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></Icon></div><div><span>Coach coverage</span><strong className="priority-text">{nextSession?.coaches.length || 0} assigned</strong><small>{nextSession?.coaches.length ? nextSession.coaches.map(({ coach }) => coach.fullName).join(", ") : "No coach assigned to the next session"}</small></div></div>
+                <div className="priority-card"><div className="priority-icon"><Icon><circle cx="12" cy="8" r="4" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></Icon></div><div><span>Active athletes</span><strong>{activePlayers}</strong><small>{readyPlayers} meeting the 75% attendance target</small></div></div>
             </section>
 
             <div className="dashboard-main-grid">

@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import type { Session } from "next-auth";
-import GlobalSearch from "./GlobalSearch";
 
 interface SidebarProps { session?: Session | null; isOpen?: boolean; onClose?: () => void; }
 type IconName = "dashboard" | "report" | "players" | "coaches" | "sessions" | "trophy" | "manage" | "calendar" | "settings";
@@ -27,9 +26,9 @@ function NavIcon({ name }: { name: IconName }) {
 }
 
 const navItems = [
-    { section: "Overview", links: [{ href: "/dashboard", label: "Team Dashboard", icon: "dashboard" as IconName }, { href: "/reports", label: "Reports", icon: "report" as IconName }] },
+    { section: "Overview", links: [{ href: "/dashboard", label: "Overview", icon: "dashboard" as IconName }, { href: "/reports", label: "Reports", icon: "report" as IconName }] },
     { section: "Team", links: [{ href: "/players", label: "Players", icon: "players" as IconName }, { href: "/coaches", label: "Coaches", icon: "coaches" as IconName }] },
-    { section: "Training & Events", links: [{ href: "/sessions", label: "Training Sessions", icon: "sessions" as IconName }, { href: "/competitions", label: "Competitions", icon: "trophy" as IconName }] },
+    { section: "Operations", links: [{ href: "/sessions", label: "Training", icon: "sessions" as IconName }, { href: "/competitions", label: "Competitions", icon: "trophy" as IconName }] },
 ];
 const adminItems = [{ section: "Manage", links: [
     { href: "/admin", label: "Admin Center", icon: "manage" as IconName },
@@ -51,10 +50,9 @@ export default function Sidebar({ session: propSession, isOpen, onClose }: Sideb
         <aside className={`sidebar ${isOpen ? "open" : ""}`}>
             <div className="sidebar-logo"><div className="brand-lockup">
                 <Image src="/ATKD.jpg" alt="Ateneo Taekwondo Team" width={44} height={44} className="brand-mark" priority />
-                <div><div className="sidebar-logo-title">ADMU TKD</div><div className="sidebar-logo-subtitle">One team. One fight.</div></div>
+                <div><div className="sidebar-logo-title">ADMU Taekwondo</div><div className="sidebar-logo-subtitle">Performance hub</div></div>
                 <button className="mobile-only sidebar-close" onClick={onClose} aria-label="Close menu">×</button>
             </div></div>
-            <div className="sidebar-search"><GlobalSearch onResultClick={onClose} /></div>
             <nav className="sidebar-nav" aria-label="Main navigation">
                 {allSections.map((section) => <div className="sidebar-section" key={section.section}>
                     <div className="sidebar-section-label">{section.section}</div>

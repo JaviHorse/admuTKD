@@ -1,206 +1,37 @@
 import { getSemesters, getActiveSemester } from "@/app/actions/semesters";
-import { getTeamAttendanceStats, getPlayerAttendanceStats } from "@/lib/computations";
+import { getTeamAttendanceStats, getPlayerAttendanceStats, getPlayerCompetitionStats, formatRate, formatWinRate } from "@/lib/computations";
 import { getPlayers } from "@/app/actions/players";
-import { getPlayerCompetitionStats } from "@/lib/computations";
-import { formatRate, formatWinRate } from "@/lib/computations";
 import SemesterSelector from "@/components/SemesterSelector";
+import ReportAttendanceChart from "@/components/ReportAttendanceChart";
 import Link from "next/link";
 
-export default async function ReportsPage({
-    searchParams,
-}: {
-    searchParams: Promise<{ semesterId?: string }>;
-}) {
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ semesterId?: string }> }) {
     const { semesterId } = await searchParams;
-    const semesters = await getSemesters();
-    const activeSemester = await getActiveSemester();
+    const [semesters, activeSemester] = await Promise.all([getSemesters(), getActiveSemester()]);
     const selectedSemesterId = semesterId || activeSemester?.id || semesters[0]?.id;
+    if (!selectedSemesterId) return <div className="empty-state surface"><div className="empty-state-icon">R</div><div className="empty-state-text">No school years configured</div></div>;
 
-    if (!selectedSemesterId) {
-        return (
-            <div>
-                <div className="page-header">
-                    <h1 className="page-title">Reports</h1>
-                    <p className="page-subtitle">No school years configured.</p>
-                </div>
-            </div>
-        );
-    }
+    const [teamStats, attendanceStats, players] = await Promise.all([getTeamAttendanceStats(selectedSemesterId), getPlayerAttendanceStats(selectedSemesterId), getPlayers(true)]);
+    const rows = await Promise.all(players.map(async (player) => ({ ...player, attendance: attendanceStats.find((item) => item.playerId === player.id), competition: await getPlayerCompetitionStats(player.id, selectedSemesterId) })));
+    const tracked = rows.filter((player) => (player.attendance?.total || 0) > 0);
+    const belowTarget = tracked.filter((player) => (player.attendance?.rate || 0) < .75);
+    const perfectAttendance = tracked.filter((player) => player.attendance?.rate === 1);
+    const totals = rows.reduce((summary, player) => ({ gold: summary.gold + player.competition.gold, silver: summary.silver + player.competition.silver, bronze: summary.bronze + player.competition.bronze, wins: summary.wins + player.competition.totalWins, matches: summary.matches + player.competition.totalMatches }), { gold: 0, silver: 0, bronze: 0, wins: 0, matches: 0 });
+    const chartData = tracked.sort((a, b) => (b.attendance?.rate || 0) - (a.attendance?.rate || 0)).map((player) => ({ name: player.fullName, rate: Number(((player.attendance?.rate || 0) * 100).toFixed(1)) }));
 
-    const teamStats = await getTeamAttendanceStats(selectedSemesterId);
-    const playerAttendanceStats = await getPlayerAttendanceStats(selectedSemesterId);
-    const players = await getPlayers(true);
-
-    // Get competition stats for all players
-    const playersWithStats = await Promise.all(
-        players.map(async (player) => {
-            const attendance = playerAttendanceStats.find((s) => s.playerId === player.id);
-            const competition = await getPlayerCompetitionStats(player.id, selectedSemesterId);
-            return {
-                ...player,
-                attendance,
-                competition,
-            };
-        })
-    );
-
-    // Top 3 Unique Ratings
-    const qualifiedPlayers = playersWithStats.filter((p) => (p.attendance?.total || 0) >= 1);
-    const uniqueRatesDesc = Array.from(new Set(qualifiedPlayers.map(p => p.attendance?.rate || 0))).sort((a, b) => b - a);
-    const top3Rates = uniqueRatesDesc.slice(0, 3);
-    const topAttendance = qualifiedPlayers
-        .filter(p => top3Rates.includes(p.attendance?.rate || 0))
-        .sort((a, b) => (b.attendance?.rate || 0) - (a.attendance?.rate || 0));
-
-    // Lowest 3 Unique Ratings (excluding Top Players)
-    const uniqueRatesAsc = [...uniqueRatesDesc].reverse();
-    const bottom3Rates = uniqueRatesAsc.slice(0, 3);
-    const bottomAttendance = qualifiedPlayers
-        .filter(p => bottom3Rates.includes(p.attendance?.rate || 0) && !topAttendance.some(tp => tp.id === p.id))
-        .sort((a, b) => (a.attendance?.rate || 0) - (b.attendance?.rate || 0));
-
-    return (
-        <div>
-            <div className="page-header">
-                <div className="flex-between">
-                    <div>
-                        <h1 className="page-title">Reports</h1>
-                        <p className="page-subtitle">School year summary and analytics</p>
-                    </div>
-                    <SemesterSelector semesters={semesters} selectedId={selectedSemesterId} />
-                </div>
-            </div>
-
-            <div className="section">
-                <div className="card">
-                    <div className="card-header">
-                        <div className="card-title">Attendance Summary</div>
-                    </div>
-                    <div className="kpi-grid" style={{ marginBottom: 24 }}>
-                        <div className="kpi-card">
-                            <div className="kpi-label">Team Attendance Rate</div>
-                            <div className="kpi-value">{formatRate(teamStats.attendanceRate)}</div>
-                        </div>
-                        <div className="kpi-card">
-                            <div className="kpi-label">Total Sessions</div>
-                            <div className="kpi-value">{teamStats.totalSessions}</div>
-                        </div>
-                        <div className="kpi-card">
-                            <div className="kpi-label">Avg Attendance</div>
-                            <div className="kpi-value">{teamStats.avgAttendancePerSession.toFixed(1)}</div>
-                        </div>
-                    </div>
-
-                    <div className="grid-2">
-                        <div>
-                            <div className="card-title" style={{ marginBottom: 12 }}>Top Attendance Players</div>
-                            <div className="table-wrap">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Player</th>
-                                            <th className="text-right">Rate</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {topAttendance.map((player) => (
-                                            <tr key={player.id}>
-                                                <td>
-                                                    <Link href={`/players/${player.id}?semesterId=${selectedSemesterId}`} className="text-primary hover:underline">
-                                                        {player.fullName}
-                                                    </Link>
-                                                </td>
-                                                <td className="text-right">
-                                                    {formatRate(player.attendance?.rate || 0)}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div>
-                            <div className="card-title" style={{ marginBottom: 12 }}>Lowest Attendance Players</div>
-                            <div className="table-wrap">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Player</th>
-                                            <th className="text-right">Rate</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {bottomAttendance.map((player) => (
-                                            <tr key={player.id}>
-                                                <td>
-                                                    <Link href={`/players/${player.id}?semesterId=${selectedSemesterId}`} className="text-primary hover:underline">
-                                                        {player.fullName}
-                                                    </Link>
-                                                </td>
-                                                <td className="text-right">
-                                                    {formatRate(player.attendance?.rate || 0)}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="section">
-                <div className="card">
-                    <div className="card-header">
-                        <div className="card-title">Results Summary: Click on a player&apos;s name to see their individual stats</div>
-                    </div>
-                    <div className="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Player</th>
-                                    <th className="text-right">🥇</th>
-                                    <th className="text-right">🥈</th>
-                                    <th className="text-right">🥉</th>
-                                    <th className="text-right">Total Medals</th>
-                                    <th className="text-right">Wins</th>
-                                    <th className="text-right">Matches</th>
-                                    <th className="text-right">Win Rate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {playersWithStats.map((player) => (
-                                    <tr key={player.id}>
-                                        <td>
-                                            <Link href={`/players/${player.id}?semesterId=${selectedSemesterId}`} className="text-primary hover:underline">
-                                                {player.fullName}
-                                            </Link>
-                                        </td>
-                                        <td className="text-right">
-                                            <span className="medal-gold">{player.competition.gold}</span>
-                                        </td>
-                                        <td className="text-right">
-                                            <span className="medal-silver">{player.competition.silver}</span>
-                                        </td>
-                                        <td className="text-right">
-                                            <span className="medal-bronze">{player.competition.bronze}</span>
-                                        </td>
-                                        <td className="text-right">
-                                            {player.competition.gold + player.competition.silver + player.competition.bronze}
-                                        </td>
-                                        <td className="text-right">{player.competition.totalWins}</td>
-                                        <td className="text-right">{player.competition.totalMatches}</td>
-                                        <td className="text-right">{formatWinRate(player.competition.winRate)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+    return <div>
+        <header className="compact-page-header"><div><span className="eyebrow">Analytics workspace</span><h1>Reports</h1><p><strong>{semesters.find((item) => item.id === selectedSemesterId)?.name}</strong> · Attendance and competition performance</p></div><div className="page-header-actions"><SemesterSelector semesters={semesters} selectedId={selectedSemesterId} /><button className="btn btn-secondary" type="button">Export report</button></div></header>
+        <section className="metric-grid">
+            <div className="metric-card accent"><span className="metric-label">Team attendance</span><strong className="metric-value">{formatRate(teamStats.attendanceRate)}</strong><span className="metric-note">75% team target</span></div>
+            <div className="metric-card"><span className="metric-label">Training sessions</span><strong className="metric-value">{teamStats.totalSessions}</strong><span className="metric-note">in selected school year</span></div>
+            <div className="metric-card"><span className="metric-label">Average turnout</span><strong className="metric-value">{teamStats.avgAttendancePerSession.toFixed(1)}</strong><span className="metric-note">athletes per session</span></div>
+            <div className="metric-card"><span className="metric-label">Below target</span><strong className="metric-value">{belowTarget.length}</strong><span className="metric-note">athletes under 75%</span></div>
+        </section>
+        <div className="report-layout">
+            <section className="surface"><div className="surface-header"><div><h2 className="surface-title">Attendance distribution</h2><p className="surface-subtitle">All tracked athletes, sorted by attendance rate</p></div><span className="status-chip status-warning">75% target</span></div><div className="report-chart" style={{ height: Math.max(330, chartData.length * 28) }}><ReportAttendanceChart data={chartData} /></div></section>
+            <aside className="insight-panel"><span className="eyebrow" style={{ color: "#ffd569" }}>Calculated summary</span><h2>Key insights</h2><div className="insight-list"><div className="insight-item"><b>1</b><span>{belowTarget.length} athlete{belowTarget.length === 1 ? " is" : "s are"} below the configured attendance target.</span></div><div className="insight-item"><b>2</b><span>{perfectAttendance.length} athlete{perfectAttendance.length === 1 ? " has" : "s have"} perfect recorded attendance.</span></div><div className="insight-item"><b>3</b><span>The team earned {totals.gold + totals.silver + totals.bronze} medals: {totals.gold} gold, {totals.silver} silver, and {totals.bronze} bronze.</span></div><div className="insight-item"><b>4</b><span>Recorded match win rate is {totals.matches ? Math.round(totals.wins / totals.matches * 100) : 0}% across {totals.matches} matches.</span></div></div></aside>
         </div>
-    );
+        <section className="metric-grid" style={{ marginTop: 18 }}><div className="metric-card"><span className="metric-label">Total medals</span><strong className="metric-value">{totals.gold + totals.silver + totals.bronze}</strong><span className="metric-note">🥇 {totals.gold} · 🥈 {totals.silver} · 🥉 {totals.bronze}</span></div><div className="metric-card"><span className="metric-label">Match win rate</span><strong className="metric-value">{totals.matches ? Math.round(totals.wins / totals.matches * 100) : 0}%</strong><span className="metric-note">{totals.wins} wins · {totals.matches} matches</span></div></section>
+        <details className="report-table-toggle surface"><summary>Detailed athlete report</summary><div className="table-wrap" style={{ border: 0, boxShadow: "none" }}><table><thead><tr><th>Athlete</th><th>Attendance</th><th>Medals</th><th>Record</th><th>Win rate</th><th /></tr></thead><tbody>{rows.map((player) => <tr key={player.id}><td><Link className="table-link" href={`/players/${player.id}?semesterId=${selectedSemesterId}`}><span className="avatar-initial">{player.fullName.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span>{player.fullName}</Link></td><td>{formatRate(player.attendance?.rate || 0)}</td><td><span className="medal-cluster"><span>🥇 {player.competition.gold}</span><span>🥈 {player.competition.silver}</span><span>🥉 {player.competition.bronze}</span></span></td><td>{player.competition.totalWins}–{Math.max(0, player.competition.totalMatches - player.competition.totalWins)}</td><td>{formatWinRate(player.competition.winRate)}</td><td><Link className="row-chevron" href={`/players/${player.id}?semesterId=${selectedSemesterId}`}>›</Link></td></tr>)}</tbody></table></div></details>
+    </div>;
 }
-
-
