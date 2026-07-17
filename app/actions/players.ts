@@ -29,14 +29,23 @@ export async function getPlayerById(id: string) {
     });
 }
 
-export async function createPlayer(data: { fullName: string; isActive?: boolean }) {
+type PlayerInput = { fullName: string; isActive?: boolean; profileImageUrl?: string | null };
+
+function validateProfileImage(value?: string | null) {
+    if (!value) return null;
+    if (!/^data:image\/(jpeg|png|webp);base64,/.test(value)) throw new Error("Profile image must be a JPEG, PNG, or WebP file.");
+    if (value.length > 1_500_000) throw new Error("Profile image is too large. Please choose a smaller image.");
+    return value;
+}
+
+export async function createPlayer(data: PlayerInput) {
     const session = await auth();
     if (session?.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
     const player = await prisma.player.create({
-        data: { fullName: data.fullName, isActive: data.isActive ?? true },
+        data: { fullName: data.fullName, profileImageUrl: validateProfileImage(data.profileImageUrl), isActive: data.isActive ?? true },
     });
     revalidatePath("/admin/players");
     revalidatePath("/players");
@@ -45,7 +54,7 @@ export async function createPlayer(data: { fullName: string; isActive?: boolean 
 
 export async function updatePlayer(
     id: string,
-    data: { fullName?: string; isActive?: boolean }
+    data: { fullName?: string; isActive?: boolean; profileImageUrl?: string | null }
 ) {
     const session = await auth();
     if (session?.user.role !== "ADMIN") {
@@ -54,7 +63,7 @@ export async function updatePlayer(
 
     const player = await prisma.player.update({
         where: { id },
-        data,
+        data: { ...data, ...(data.profileImageUrl !== undefined ? { profileImageUrl: validateProfileImage(data.profileImageUrl) } : {}) },
     });
     revalidatePath("/admin/players");
     revalidatePath("/players");

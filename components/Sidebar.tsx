@@ -32,6 +32,7 @@ const navItems = [
 ];
 const adminItems = [{ section: "Manage", links: [
     { href: "/admin", label: "Admin Center", icon: "manage" as IconName },
+    { href: "/admin/profile", label: "My Profile", icon: "coaches" as IconName },
     { href: "/admin/semesters", label: "School Years", icon: "calendar" as IconName },
     { href: "/admin/players", label: "Manage Players", icon: "players" as IconName },
     { href: "/admin/coaches", label: "Manage Coaches", icon: "coaches" as IconName },
@@ -63,7 +64,7 @@ export default function Sidebar({ session: propSession, isOpen, onClose }: Sideb
                 </div>)}
             </nav>
             <div className="sidebar-footer">
-                <div className="sidebar-user"><div className="sidebar-avatar">{initials}</div><div className="sidebar-user-copy"><div className="sidebar-user-name">{session?.user?.name || "Guest Visitor"}</div><div className="sidebar-user-role">{isAdmin ? "Team administrator" : "View only"}</div></div></div>
+                <Link href={isAdmin ? "/admin/profile" : "/dashboard"} className="sidebar-user" onClick={onClose}><div className="sidebar-avatar">{session?.user?.profileImageUrl ? <Image src={session.user.profileImageUrl} alt="" fill sizes="38px" unoptimized /> : initials}</div><div className="sidebar-user-copy"><div className="sidebar-user-name">{session?.user?.name || "Guest Visitor"}</div><div className="sidebar-user-role">{isAdmin ? "View my profile" : "View only"}</div></div></Link>
                 <button className="btn btn-ghost btn-sm sidebar-signout" onClick={() => { if (session) signOut({ callbackUrl: "/login" }); else { document.cookie = "guest_access=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"; window.location.href = "/login"; } }}>Sign out</button>
             </div>
         </aside>

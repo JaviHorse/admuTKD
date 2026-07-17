@@ -9,6 +9,10 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="grid-2" style={{ gap: 20 }}>
+                <Link href="/admin/profile" className="card" style={{ textDecoration: "none", display: "block" }}>
+                    <div className="card-header"><div className="card-title">My Administrator Profile</div></div>
+                    <p className="text-muted" style={{ marginTop: 8 }}>Update the photo and bio shown beside your team posts</p>
+                </Link>
                 <Link href="/admin/semesters" className="card" style={{ textDecoration: "none", display: "block" }}>
                     <div className="card-header">
                         <div className="card-title">🗓️ Manage School Years</div>
@@ -59,7 +63,7 @@ export default function AdminDashboardPage() {
                         <div className="card-title">⚙️ Settings</div>
                     </div>
                     <p className="text-muted" style={{ marginTop: 8 }}>
-                        Set the UAAP event date and other app settings
+                        Manage training cancellations, the UAAP date, and team-wide settings
                     </p>
                 </Link>
             </div>

@@ -14,11 +14,27 @@ model User {
   passwordHash String
   role         String   @default("VIEWER")
   createdAt    DateTime @default(now())
+  profileImageUrl String?
+  bio          String?
+  dashboardPosts DashboardPost[]
+}
+
+model DashboardPost {
+  id        String   @id @default(cuid())
+  content   String?
+  imageUrl  String?
+  authorId  String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([authorId])
 }
 
 model Player {
   id                 String              @id @default(cuid())
   fullName           String
+  profileImageUrl    String?
   isActive           Boolean             @default(true)
   createdAt          DateTime            @default(now())
   attendanceRecords  AttendanceRecord[]
@@ -28,6 +44,7 @@ model Player {
 model Coach {
   id        String         @id @default(cuid())
   fullName  String
+  profileImageUrl String?
   roleTitle String?
   isActive  Boolean        @default(true)
   createdAt DateTime       @default(now())

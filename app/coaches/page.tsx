@@ -1,6 +1,7 @@
 import { getCoaches } from "@/app/actions/coaches";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import Image from "next/image";
 
 export default async function CoachesPage() {
     const coaches = await getCoaches();
@@ -23,7 +24,7 @@ export default async function CoachesPage() {
             const rates = links.map((link) => link.session.attendance.length ? link.session.attendance.filter((record) => record.status === "PRESENT" || record.status === "LATE").length / link.session.attendance.length : 0);
             const averageTurnout = rates.length ? rates.reduce((sum, rate) => sum + rate, 0) / rates.length : 0;
             const initials = coach.fullName.split(" ").map((part) => part[0]).join("").slice(0, 2);
-            return <Link href={`/coaches/${coach.id}`} className="coach-card surface" key={coach.id}><div className="coach-card-head"><div className="coach-avatar">{initials}</div><div><h2>{coach.fullName}</h2><div className="coach-card-role">{coach.roleTitle || "Coaching staff"}</div></div></div><div className="coach-card-stats"><div><b>{links.length}</b><span>Sessions attended</span></div><div><b>{Math.round(averageTurnout * 100)}%</b><span>Turnout when present</span></div></div><div className="coach-card-footer"><span className={`status-chip ${coach.isActive ? "status-active" : "status-inactive"}`}>{coach.isActive ? "Active" : "Inactive"}</span><span>Open profile ›</span></div></Link>;
+            return <Link href={`/coaches/${coach.id}`} className="coach-card surface" key={coach.id}><div className="coach-card-head"><div className="coach-avatar">{coach.profileImageUrl ? <Image src={coach.profileImageUrl} alt="" fill sizes="48px" unoptimized /> : initials}</div><div><h2>{coach.fullName}</h2><div className="coach-card-role">{coach.roleTitle || "Coaching staff"}</div></div></div><div className="coach-card-stats"><div><b>{links.length}</b><span>Sessions attended</span></div><div><b>{Math.round(averageTurnout * 100)}%</b><span>Turnout when present</span></div></div><div className="coach-card-footer"><span className={`status-chip ${coach.isActive ? "status-active" : "status-inactive"}`}>{coach.isActive ? "Active" : "Inactive"}</span><span className="view-profile-label">View profile ›</span></div></Link>;
         })}</section> : <div className="empty-state surface"><div className="empty-state-icon">C</div><div className="empty-state-text">No coaches found</div></div>}
     </div>;
 }

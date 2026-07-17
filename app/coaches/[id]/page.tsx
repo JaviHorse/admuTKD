@@ -3,145 +3,33 @@ import { getSemesters, getActiveSemester } from "@/app/actions/semesters";
 import { calcTurnout } from "@/lib/computations";
 import SemesterSelector from "@/components/SemesterSelector";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
 
-export default async function CoachProfilePage({
-    params,
-    searchParams,
-}: {
-    params: Promise<{ id: string }>;
-    searchParams: Promise<{ semesterId?: string }>;
-}) {
-    const { id } = await params;
-    const { semesterId } = await searchParams;
-    const coach = await getCoachById(id);
+export default async function CoachProfilePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ semesterId?: string }> }) {
+    const [{ id }, { semesterId }] = await Promise.all([params, searchParams]);
+    const [coach, semesters, activeSemester, userSession] = await Promise.all([getCoachById(id), getSemesters(), getActiveSemester(), auth()]);
     if (!coach) notFound();
-
-    const semesters = await getSemesters();
-    const activeSemester = await getActiveSemester();
     const selectedSemesterId = semesterId || activeSemester?.id || semesters[0]?.id;
+    const selectedSemester = semesters.find((item) => item.id === selectedSemesterId);
+    const coachSessions = coach.sessions.map((link) => link.session).filter((session) => !selectedSemester || (session.sessionDate >= selectedSemester.startDate && session.sessionDate <= selectedSemester.endDate)).sort((a, b) => +b.sessionDate - +a.sessionDate);
+    const rates = coachSessions.map((session) => calcTurnout(session.attendance));
+    const averageTurnout = rates.length ? rates.reduce((sum, rate) => sum + rate, 0) / rates.length : 0;
+    const bestTurnout = rates.length ? Math.max(...rates) : 0;
+    const totalSessions = selectedSemester ? await prisma.session.count({ where: { sessionDate: { gte: selectedSemester.startDate, lte: selectedSemester.endDate } } }) : await prisma.session.count();
+    const coverage = totalSessions ? coachSessions.length / totalSessions : 0;
+    const lastActive = coachSessions[0]?.sessionDate;
+    const initials = coach.fullName.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+    const isAdmin = userSession?.user?.role === "ADMIN";
 
-    const coachSessions = selectedSemesterId
-        ? coach.sessions
-            .filter((sc) => {
-                const sessionDate = new Date(sc.session.sessionDate);
-                const semester = semesters.find((s) => s.id === selectedSemesterId);
-                if (!semester) return false;
-                return (
-                    sessionDate >= new Date(semester.startDate) &&
-                    sessionDate <= new Date(semester.endDate)
-                );
-            })
-            .map((sc) => sc.session)
-        : coach.sessions.map((sc) => sc.session);
-
-    // Calculate attendance rate for sessions where coach was present
-    const totalRecords = coachSessions.reduce(
-        (sum, session) => sum + (session.attendance?.length || 0),
-        0
-    );
-    const presentRecords = coachSessions.reduce(
-        (sum, session) =>
-            sum + (session.attendance?.filter((r) => r.status === "PRESENT").length || 0),
-        0
-    );
-    const attendanceRate = totalRecords > 0 ? presentRecords / totalRecords : 0;
-
-    return (
-        <div>
-            <Link href="/coaches" className="back-link">
-                ← Back to Coaches
-            </Link>
-
-            <div className="page-header">
-                <div className="flex-between">
-                    <div>
-                        <h1 className="page-title">{coach.fullName}</h1>
-                        <p className="page-subtitle">
-                            {coach.roleTitle && <span>{coach.roleTitle}</span>}
-                            <span className={`badge ${coach.isActive ? "badge-active" : "badge-inactive"}`} style={{ marginLeft: 8 }}>
-                                {coach.isActive ? "Active" : "Inactive"}
-                            </span>
-                        </p>
-                    </div>
-                    {semesters.length > 0 && (
-                        <SemesterSelector semesters={semesters} selectedId={selectedSemesterId || ""} />
-                    )}
-                </div>
-            </div>
-
-            {selectedSemesterId ? (
-                <>
-                    <div className="card" style={{ marginBottom: 28 }}>
-                        <div className="card-header">
-                            <div className="card-title">Assigned-session attendance</div>
-                        </div>
-                        <div className="stat-row">
-                            <div className="stat-item">
-                                <div className="stat-value">{(attendanceRate * 100).toFixed(1)}%</div>
-                                <div className="stat-label">Average turnout when present</div>
-                            </div>
-                            <div className="stat-item">
-                                <div className="stat-value">{coachSessions.length}</div>
-                                <div className="stat-label">Sessions Attended</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {coachSessions.length > 0 && (
-                        <div className="card">
-                            <div className="card-header">
-                                <div className="card-title">Sessions</div>
-                            </div>
-                            <div className="table-wrap">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Type</th>
-                                            <th>Location</th>
-                                            <th className="text-right">Turnout %</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {coachSessions
-                                            .sort((a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime())
-                                            .slice(0, 5)
-                                            .map((session) => {
-                                                const turnout = calcTurnout(session.attendance || []);
-                                                return (
-                                                    <tr key={session.id} className="clickable">
-                                                        <td>
-                                                            <Link href={`/sessions/${session.id}`}>
-                                                                {new Date(session.sessionDate).toLocaleDateString("en-US", {
-                                                                    month: "short",
-                                                                    day: "numeric",
-                                                                    year: "numeric",
-                                                                })}
-                                                            </Link>
-                                                        </td>
-                                                        <td>{session.sessionType}</td>
-                                                        <td>{session.location || "—"}</td>
-                                                        <td className="text-right">{(turnout * 100).toFixed(1)}%</td>
-                                                    </tr>
-                                                );
-                                            })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-                </>
-            ) : (
-                <div className="card">
-                    <div className="empty-state" style={{ padding: "48px" }}>
-                        <div className="empty-state-icon">📅</div>
-                        <div className="empty-state-text">Select a school year to view statistics</div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+    return <div>
+        <div className="profile-breadcrumb"><Link href="/coaches">Coaches</Link><span>/</span><strong>{coach.fullName}</strong></div>
+        <section className="profile-hero surface profile-hero-coach"><div className="profile-photo profile-photo-coach">{coach.profileImageUrl ? <Image src={coach.profileImageUrl} alt={coach.fullName} fill sizes="(max-width: 768px) 120px, 164px" priority unoptimized /> : <span>{initials}</span>}</div><div className="profile-identity"><span className="eyebrow">Coach profile</span><h1>{coach.fullName}</h1><div className="profile-chips"><span className={`status-chip ${coach.isActive ? "status-active" : "status-inactive"}`}>{coach.isActive ? "Active coach" : "Inactive coach"}</span>{coach.roleTitle && <span className="status-chip status-upcoming">{coach.roleTitle}</span>}</div><p>Assigned-session coverage · {selectedSemester?.name || "All-time record"}</p></div><div className="profile-actions"><SemesterSelector semesters={semesters} selectedId={selectedSemesterId || ""} />{isAdmin && <Link href="/admin/coaches" className="btn btn-primary">Edit coach</Link>}</div></section>
+        <nav className="profile-tabs"><a href="#overview" className="active">Overview</a><a href="#sessions">Assigned sessions</a></nav>
+        <section id="overview" className="metric-grid profile-metrics"><div className="metric-card accent"><span className="metric-label">Sessions attended</span><strong className="metric-value">{coachSessions.length}</strong><span className="metric-note">of {totalSessions} team sessions</span></div><div className="metric-card"><span className="metric-label">Assignment coverage</span><strong className="metric-value">{Math.round(coverage * 100)}%</strong><span className="metric-note">share of team sessions attended</span></div><div className="metric-card"><span className="metric-label">Turnout when present</span><strong className="metric-value">{Math.round(averageTurnout * 100)}%</strong><span className="metric-note">descriptive, not causal</span></div><div className="metric-card"><span className="metric-label">Highest turnout</span><strong className="metric-value">{Math.round(bestTurnout * 100)}%</strong><span className="metric-note">across assigned sessions</span></div></section>
+        <div className="profile-content-grid"><section className="surface coach-coverage-visual"><div className="surface-header"><div><h2 className="surface-title">Coverage overview</h2><p className="surface-subtitle">Participation across the selected school year</p></div><span className={`status-chip ${coach.isActive ? "status-active" : "status-inactive"}`}>{coach.isActive ? "Active" : "Inactive"}</span></div><div className="coverage-display"><div className="attendance-ring coach-ring" style={{ background: `conic-gradient(#f4b41a ${coverage * 360}deg, rgba(255,255,255,.14) 0deg)` }}><div><strong>{Math.round(coverage * 100)}%</strong><span>coverage</span></div></div><div><span className="eyebrow" style={{ color: "#ffd569" }}>Latest activity</span><strong>{lastActive ? lastActive.toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" }) : "No sessions yet"}</strong><p>{coachSessions.length ? `${coachSessions.length} assigned appearances in ${selectedSemester?.name || "the selected period"}.` : "Assignments will appear after the coach attends a session."}</p></div></div></section><section className="surface"><div className="surface-header"><div><h2 className="surface-title">Coaching profile</h2><p className="surface-subtitle">Team role and current assignment status</p></div></div><div className="profile-facts"><div><span>Role</span><strong>{coach.roleTitle || "Coaching staff"}</strong></div><div><span>Status</span><strong>{coach.isActive ? "Active" : "Inactive"}</strong></div><div><span>Profile since</span><strong>{coach.createdAt.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</strong></div></div></section></div>
+        <section id="sessions" className="surface profile-history"><div className="surface-header"><div><h2 className="surface-title">Recent assigned sessions</h2><p className="surface-subtitle">Latest five appearances and recorded team turnout</p></div><Link href="/sessions" className="text-link">View all training</Link></div><div className="table-wrap" style={{ border: 0, boxShadow: "none" }}><table><thead><tr><th>Date</th><th>Type</th><th>Location</th><th>Team turnout</th><th>Status</th><th /></tr></thead><tbody>{coachSessions.length ? coachSessions.slice(0, 5).map((session) => { const turnout = calcTurnout(session.attendance); return <tr key={session.id}><td><Link className="table-link" href={`/sessions/${session.id}`}><span className="avatar-initial">{session.sessionDate.toLocaleDateString("en-PH", { day: "2-digit" })}</span><span>{session.sessionDate.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}<span className="record-sub">{session.sessionDate.toLocaleDateString("en-PH", { weekday: "long" })}</span></span></Link></td><td><span className="status-chip status-upcoming">{session.sessionType}</span></td><td>{session.location || "—"}</td><td className="attendance-cell"><div><span>{Math.round(turnout * 100)}%</span><small>{session.attendance.length} records</small></div><div className="progress-track"><i style={{ width: `${turnout * 100}%` }} /></div></td><td><span className="status-chip status-completed">Completed</span></td><td><Link href={`/sessions/${session.id}`} className="row-chevron">›</Link></td></tr>; }) : <tr><td colSpan={6} className="empty-state" style={{ padding: 38 }}>No assigned sessions for this school year.</td></tr>}</tbody></table></div></section>
+    </div>;
 }
-
-

@@ -42,12 +42,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.role = (user as { role?: string }).role;
                 token.id = user.id;
             }
+            delete (token as typeof token & { profileImageUrl?: unknown }).profileImageUrl;
             return token;
         },
         async session({ session, token }) {
-            if (token) {
+            const userId = typeof token.id === "string" ? token.id : null;
+
+            if (userId) {
                 session.user.role = token.role as string;
-                session.user.id = token.id as string;
+                session.user.id = userId;
+
+                try {
+                    const currentUser = await prisma.user.findUnique({
+                        where: { id: userId },
+                        select: { profileImageUrl: true },
+                    });
+                    session.user.profileImageUrl = currentUser?.profileImageUrl
+                        ? `/api/admin-avatar/${userId}`
+                        : null;
+                } catch {
+                    // An optional avatar lookup should never make the auth session endpoint fail.
+                    session.user.profileImageUrl = null;
+                }
             }
             return session;
         },
