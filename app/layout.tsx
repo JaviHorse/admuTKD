@@ -1,23 +1,13 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
-
 import LayoutWrapper from "@/components/LayoutWrapper";
 
+const inter = Inter({ subsets: ["latin"] });
+
 export const metadata: Metadata = {
-<<<<<<< HEAD
-  title: "ADMU TKD — Performance Hub",
-  description: "Ateneo de Manila University Taekwondo Team Management System",
-  icons: {
-    icon: "/LOGO.jpg",
-    apple: "/LOGO.jpg",
-  },
-=======
-<<<<<<< Updated upstream
-  title: "ADMU TKD — Team Management",
-  description: "Ateneo de Manila University Taekwondo Team Management System",
-=======
   title: "ADMU TKD: Performance Hub",
   description: "Ateneo de Manila University Taekwondo Team Management System",
   icons: {
@@ -25,8 +15,6 @@ export const metadata: Metadata = {
     shortcut: "/icon.svg",
     apple: "/icon.svg",
   },
->>>>>>> Stashed changes
->>>>>>> c14197c (Finalized layout sana)
 };
 
 export default async function RootLayout({
@@ -38,7 +26,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <SessionProvider session={session}>
           <LayoutWrapper session={session}>
             {children}
