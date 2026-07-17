@@ -8,6 +8,10 @@ import LayoutWrapper from "@/components/LayoutWrapper";
 export const metadata: Metadata = {
   title: "ADMU TKD — Performance Hub",
   description: "Ateneo de Manila University Taekwondo Team Management System",
+  icons: {
+    icon: "/LOGO.jpg",
+    apple: "/LOGO.jpg",
+  },
 };
 
 export default async function RootLayout({
