@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export async function GET(request: NextRequest) {
-    const searchParams = request.nextUrl.searchParams;
-    const query = searchParams.get("q")?.toLowerCase() || "";
-
+async function searchRecords(query: string) {
     if (query.length < 2) {
-        return NextResponse.json({ results: [] });
+        return [];
     }
 
     try {
@@ -25,7 +22,7 @@ export async function GET(request: NextRequest) {
             .filter((c) => c.fullName.toLowerCase().includes(query))
             .slice(0, 5);
         const sessions = allSessions
-            .filter((s) => 
+            .filter((s) =>
                 s.sessionType?.toLowerCase().includes(query) ||
                 s.location?.toLowerCase().includes(query)
             )
@@ -34,7 +31,7 @@ export async function GET(request: NextRequest) {
             .filter((c) => c.name.toLowerCase().includes(query))
             .slice(0, 5);
 
-        const results = [
+        return [
             ...players.map((p) => ({
                 type: "player" as const,
                 id: p.id,
@@ -60,11 +57,30 @@ export async function GET(request: NextRequest) {
                 subtitle: new Date(c.competitionDate).toLocaleDateString(),
             })),
         ];
-
-        return NextResponse.json({ results });
     } catch (error) {
         console.error("Search error:", error);
-        return NextResponse.json({ results: [] }, { status: 500 });
+        return [];
     }
+}
+
+export async function GET(request: NextRequest) {
+    const searchParams = request.nextUrl.searchParams;
+    const query = String(searchParams.get("q") || "").trim().toLowerCase().slice(0, 100);
+    const results = await searchRecords(query);
+    return NextResponse.json({ results });
+}
+
+export async function POST(request: NextRequest) {
+    let body: { q?: unknown } = {};
+
+    try {
+        body = await request.json();
+    } catch {
+        body = {};
+    }
+
+    const query = String(body.q || "").trim().toLowerCase().slice(0, 100);
+    const results = await searchRecords(query);
+    return NextResponse.json({ results });
 }
 

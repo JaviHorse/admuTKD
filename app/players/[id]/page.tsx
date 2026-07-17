@@ -1,216 +1,43 @@
 import { getPlayerById } from "@/app/actions/players";
 import { getSemesters, getActiveSemester } from "@/app/actions/semesters";
-import { getPlayerAttendanceStats, getPlayerCompetitionStats } from "@/lib/computations";
-import { formatRate, formatWinRate } from "@/lib/computations";
-import { getCompetitionsInSemester } from "@/lib/computations";
+import { getPlayerAttendanceStats, getPlayerCompetitionStats, formatRate, formatWinRate } from "@/lib/computations";
 import SemesterSelector from "@/components/SemesterSelector";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 
-export default async function PlayerProfilePage({
-    params,
-    searchParams,
-}: {
-    params: Promise<{ id: string }>;
-    searchParams: Promise<{ semesterId?: string }>;
-}) {
-    const { id } = await params;
-    const { semesterId } = await searchParams;
-    const player = await getPlayerById(id);
+export default async function PlayerProfilePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ semesterId?: string }> }) {
+    const [{ id }, { semesterId }] = await Promise.all([params, searchParams]);
+    const [player, semesters, activeSemester, userSession] = await Promise.all([getPlayerById(id), getSemesters(), getActiveSemester(), auth()]);
     if (!player) notFound();
-
-    const semesters = await getSemesters();
-    const activeSemester = await getActiveSemester();
     const selectedSemesterId = semesterId || activeSemester?.id || semesters[0]?.id;
+    const selectedSemester = semesters.find((item) => item.id === selectedSemesterId);
+    const attendanceStats = selectedSemesterId ? (await getPlayerAttendanceStats(selectedSemesterId)).find((item) => item.playerId === player.id) : null;
+    const competitionStats = selectedSemesterId ? await getPlayerCompetitionStats(player.id, selectedSemesterId) : null;
+    const allTimeWins = player.competitionResults.reduce((sum, result) => sum + result.wins, 0);
+    const allTimeMatches = player.competitionResults.reduce((sum, result) => sum + result.matches, 0);
+    const semesterResults = selectedSemester ? player.competitionResults.filter((result) => result.competition.competitionDate >= selectedSemester.startDate && result.competition.competitionDate <= selectedSemester.endDate) : player.competitionResults;
+    const recentAttendance = selectedSemester ? player.attendanceRecords.filter((record) => record.session.sessionDate >= selectedSemester.startDate && record.session.sessionDate <= selectedSemester.endDate) : player.attendanceRecords;
+    const attendanceRate = attendanceStats?.rate || 0;
+    const readiness = !attendanceStats?.total ? { label: "Insufficient data", className: "status-neutral", note: "No attendance records in this school year" } : attendanceRate >= .75 ? { label: "Ready", className: "status-ready", note: "Meets the 75% attendance target" } : attendanceRate >= .6 ? { label: "Monitor", className: "status-monitor", note: "Approaching the attendance target" } : { label: "At risk", className: "status-risk", note: "Below the attendance target" };
+    const initials = player.fullName.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+    const totalMedals = (competitionStats?.gold || 0) + (competitionStats?.silver || 0) + (competitionStats?.bronze || 0);
+    const isAdmin = userSession?.user?.role === "ADMIN";
 
-    const attendanceStats = selectedSemesterId
-        ? (await getPlayerAttendanceStats(selectedSemesterId)).find((s) => s.playerId === player.id)
-        : null;
-
-    const competitionStats = selectedSemesterId
-        ? await getPlayerCompetitionStats(player.id, selectedSemesterId)
-        : null;
-
-    const competitions = selectedSemesterId ? await getCompetitionsInSemester(selectedSemesterId) : [];
-
-    // All-time win rate from ALL competition results of this player (across all semesters)
-    const allTimeWins = (player.competitionResults || []).reduce((sum, r) => sum + (r?.wins ?? 0), 0);
-    const allTimeMatches = (player.competitionResults || []).reduce((sum, r) => sum + (r?.matches ?? 0), 0);
-    const allTimeWinRate = allTimeMatches > 0 ? allTimeWins / allTimeMatches : 0;
-
-    // Get player's results for competitions in this semester
-    const competitionResults = competitions.map((comp) => {
-        const result = player.competitionResults.find((r) => r.competitionId === comp.id);
-        return {
-            competition: comp,
-            result,
-        };
-    });
-
-    return (
-        <div>
-            <Link href="/players" className="back-link">
-                ← Back to Reports
-            </Link>
-
-            <div className="page-header">
-                <div className="flex-between">
-                    <div>
-                        <h1 className="page-title">{player.fullName}</h1>
-                        <p className="page-subtitle">
-                            <span className={`badge ${player.isActive ? "badge-active" : "badge-inactive"}`}>
-                                {player.isActive ? "Active" : "Inactive"}
-                            </span>
-                        </p>
-                    </div>
-                    {semesters.length > 0 && (
-                        <SemesterSelector semesters={semesters} selectedId={selectedSemesterId || ""} />
-                    )}
-                </div>
-            </div>
-
-            {selectedSemesterId ? (
-                <>
-                    <div className="grid-2" style={{ marginBottom: 28 }}>
-                        <div className="card">
-                            <div className="card-header">
-                                <div className="card-title">Attendance</div>
-                            </div>
-                            {attendanceStats ? (
-                                <div>
-                                    <div className="stat-row">
-                                        <div className="stat-item">
-                                            <div className="stat-value">{formatRate(attendanceStats.rate)}</div>
-                                            <div className="stat-label">Attendance Rate</div>
-                                        </div>
-                                        <div className="stat-item">
-                                            <div className="stat-value">{attendanceStats.present}</div>
-                                            <div className="stat-label">Present</div>
-                                        </div>
-                                        <div className="stat-item">
-                                            <div className="stat-value">{attendanceStats.late}</div>
-                                            <div className="stat-label">Late</div>
-                                        </div>
-                                        <div className="stat-item">
-                                            <div className="stat-value">{attendanceStats.absent}</div>
-                                            <div className="stat-label">Absent</div>
-                                        </div>
-                                        <div className="stat-item">
-                                            <div className="stat-value">{attendanceStats.excused}</div>
-                                            <div className="stat-label">Excused</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="empty-state" style={{ padding: "24px" }}>
-                                    <div className="text-muted">No attendance data for this semester</div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="card">
-                            <div className="card-header">
-                                <div className="card-title">Competition Results</div>
-                            </div>
-                            {competitionStats ? (
-                                <div>
-                                    <div className="stat-row">
-                                        <div className="stat-item">
-                                            <div className="stat-value">
-                                                <span className="medal-gold">🥇{competitionStats.gold}</span>{" "}
-                                                <span className="medal-silver">🥈{competitionStats.silver}</span>{" "}
-                                                <span className="medal-bronze">🥉{competitionStats.bronze}</span>
-                                            </div>
-                                            <div className="stat-label">Medals</div>
-                                        </div>
-                                        <div className="stat-item">
-                                            <div className="stat-value">{competitionStats.totalWins}</div>
-                                            <div className="stat-label">Total Wins</div>
-                                        </div>
-                                        <div className="stat-item">
-                                            <div className="stat-value">{competitionStats.totalMatches}</div>
-                                            <div className="stat-label">Total Matches</div>
-                                        </div>
-                                        <div className="stat-item">
-                                            <div className="stat-value">
-                                                {allTimeMatches > 0 ? formatWinRate(allTimeWinRate) : "—"}
-                                            </div>
-                                            <div className="stat-label">All-Time Win Rate</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="empty-state" style={{ padding: "24px" }}>
-                                    <div className="text-muted">No competition data for this semester</div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {competitionResults.length > 0 && (
-                        <div className="card">
-                            <div className="card-header">
-                                <div className="card-title">Competition History</div>
-                            </div>
-                            <div className="table-wrap">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Competition</th>
-                                            <th>Date</th>
-                                            <th className="text-right">Medal</th>
-                                            <th className="text-right">Wins</th>
-                                            <th className="text-right">Matches</th>
-                                            <th className="text-right">Win Rate</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {competitionResults.map(({ competition, result }) => (
-                                            <tr key={competition.id}>
-                                                <td>
-                                                    <Link href={`/competitions/${competition.id}`}>
-                                                        {competition.name}
-                                                    </Link>
-                                                </td>
-                                                <td>
-                                                    {new Date(competition.competitionDate).toLocaleDateString()}
-                                                </td>
-                                                <td className="text-right">
-                                                    {result ? (
-                                                        <span className={`medal-${result.medal.toLowerCase()}`}>
-                                                            {result.medal === "GOLD" && "🥇"}
-                                                            {result.medal === "SILVER" && "🥈"}
-                                                            {result.medal === "BRONZE" && "🥉"}
-                                                            {result.medal === "NONE" && "—"}
-                                                        </span>
-                                                    ) : (
-                                                        "—"
-                                                    )}
-                                                </td>
-                                                <td className="text-right">{result?.wins || "—"}</td>
-                                                <td className="text-right">{result?.matches || "—"}</td>
-                                                <td className="text-right">
-                                                    {result && result.matches > 0
-                                                        ? formatWinRate(result.wins / result.matches)
-                                                        : "—"}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-                </>
-            ) : (
-                <div className="card">
-                    <div className="empty-state" style={{ padding: "48px" }}>
-                        <div className="empty-state-icon">📅</div>
-                        <div className="empty-state-text">Select a semester to view statistics</div>
-                    </div>
-                </div>
-            )}
+    return <div>
+        <div className="profile-breadcrumb"><Link href="/players">Players</Link><span>/</span><strong>{player.fullName}</strong></div>
+        <section className="profile-hero surface">
+            <div className="profile-photo profile-photo-player">{player.profileImageUrl ? <Image src={player.profileImageUrl} alt={player.fullName} fill sizes="(max-width: 768px) 120px, 164px" priority unoptimized /> : <span>{initials}</span>}</div>
+            <div className="profile-identity"><span className="eyebrow">Athlete profile</span><h1>{player.fullName}</h1><div className="profile-chips"><span className={`status-chip ${player.isActive ? "status-active" : "status-inactive"}`}>{player.isActive ? "Active athlete" : "Inactive athlete"}</span><span className={`status-chip ${readiness.className}`}>{readiness.label}</span></div><p>{readiness.note} · {selectedSemester?.name || "All-time record"}</p></div>
+            <div className="profile-actions"><SemesterSelector semesters={semesters} selectedId={selectedSemesterId || ""} />{isAdmin && <Link href="/admin/players" className="btn btn-primary">Edit athlete</Link>}</div>
+        </section>
+        <nav className="profile-tabs"><a href="#overview" className="active">Overview</a><a href="#attendance">Attendance</a><a href="#competitions">Competitions</a></nav>
+        <section id="overview" className="metric-grid profile-metrics"><div className="metric-card accent"><span className="metric-label">Attendance</span><strong className="metric-value">{attendanceStats ? formatRate(attendanceRate) : "—"}</strong><span className="metric-note">75% readiness target</span></div><div className="metric-card"><span className="metric-label">Session record</span><strong className="metric-value">{attendanceStats?.present || 0}<small> / {attendanceStats?.total || 0}</small></strong><span className="metric-note">present across recorded sessions</span></div><div className="metric-card"><span className="metric-label">Medal contribution</span><strong className="metric-value">{totalMedals}</strong><span className="metric-note">🥇 {competitionStats?.gold || 0} · 🥈 {competitionStats?.silver || 0} · 🥉 {competitionStats?.bronze || 0}</span></div><div className="metric-card"><span className="metric-label">All-time record</span><strong className="metric-value">{allTimeWins}–{Math.max(0, allTimeMatches - allTimeWins)}</strong><span className="metric-note">{allTimeMatches ? formatWinRate(allTimeWins / allTimeMatches) : "No matches recorded"}</span></div></section>
+        <div className="profile-content-grid">
+            <section id="attendance" className="surface"><div className="surface-header"><div><h2 className="surface-title">Attendance performance</h2><p className="surface-subtitle">Status composition for the selected school year</p></div><span className={`status-chip ${readiness.className}`}>{readiness.label}</span></div><div className="attendance-overview"><div className="attendance-ring" style={{ background: `conic-gradient(#0756c7 ${attendanceRate * 360}deg, #e8edf4 0deg)` }}><div><strong>{Math.round(attendanceRate * 100)}%</strong><span>attendance</span></div></div><div className="attendance-breakdown-list"><div><span><i className="dot-present" />Present</span><b>{attendanceStats?.present || 0}</b></div><div><span><i className="dot-late" />Late</span><b>{attendanceStats?.late || 0}</b></div><div><span><i className="dot-absent" />Absent</span><b>{attendanceStats?.absent || 0}</b></div><div><span><i className="dot-excused" />Excused</span><b>{attendanceStats?.excused || 0}</b></div></div></div></section>
+            <section className="surface"><div className="surface-header"><div><h2 className="surface-title">Recent attendance</h2><p className="surface-subtitle">Latest recorded training activity</p></div><Link href="/sessions" className="text-link">All training</Link></div><div className="profile-activity-list">{recentAttendance.length ? recentAttendance.slice(0, 5).map((record) => <Link href={`/sessions/${record.sessionId}`} key={record.id}><div className="activity-date"><b>{record.session.sessionDate.toLocaleDateString("en-PH", { day: "2-digit" })}</b><span>{record.session.sessionDate.toLocaleDateString("en-PH", { month: "short" })}</span></div><div><strong>{record.session.sessionType}</strong><small>{record.session.location || "Location not recorded"}{record.note ? ` · ${record.note}` : ""}</small></div><span className={`status-chip status-${record.status.toLowerCase()}`}>{record.status.charAt(0) + record.status.slice(1).toLowerCase()}</span></Link>) : <div className="compact-empty"><strong>No recent attendance</strong><p>Training records will appear after attendance is entered.</p></div>}</div></section>
         </div>
-    );
+        <section id="competitions" className="surface profile-history"><div className="surface-header"><div><h2 className="surface-title">Competition history</h2><p className="surface-subtitle">Medals and match records in {selectedSemester?.name || "all school years"}</p></div><span className="status-chip status-upcoming">{semesterResults.length} events</span></div><div className="table-wrap" style={{ border: 0, boxShadow: "none" }}><table><thead><tr><th>Competition</th><th>Date</th><th>Medal</th><th>Record</th><th>Win rate</th><th /></tr></thead><tbody>{semesterResults.length ? semesterResults.map((result) => <tr key={result.id}><td><Link className="table-link" href={`/competitions/${result.competitionId}`}>{result.competition.name}</Link></td><td>{result.competition.competitionDate.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</td><td>{result.medal === "GOLD" ? "🥇 Gold" : result.medal === "SILVER" ? "🥈 Silver" : result.medal === "BRONZE" ? "🥉 Bronze" : "—"}</td><td><span className="record-main">{result.wins}–{Math.max(0, result.matches - result.wins)}</span><span className="record-sub">{result.matches} matches</span></td><td>{result.matches ? formatWinRate(result.wins / result.matches) : "—"}</td><td><Link href={`/competitions/${result.competitionId}`} className="row-chevron">›</Link></td></tr>) : <tr><td colSpan={6} className="empty-state" style={{ padding: 38 }}>No competition results for this school year.</td></tr>}</tbody></table></div></section>
+    </div>;
 }
-

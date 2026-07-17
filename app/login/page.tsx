@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -38,12 +39,12 @@ export default function LoginPage() {
 
     return (
         <div className="login-page">
-            <img className="login-bg" src="/background.png" alt="" />
+            <Image className="login-bg" src="/background.png" alt="" fill sizes="100vw" priority />
             <div className="login-overlay" />
 
             <div className="login-card">
                 <div className="login-logo">
-                    <img className="login-logo-img" src="/ATKD.jpg" alt="ATKD Logo" />
+                    <Image className="login-logo-img" src="/ATKD.jpg" alt="ATKD Logo" width={56} height={56} priority />
                     <div className="login-logo-title">ADMU TKD</div>
                     <div className="login-logo-sub">Team Analytics and Management System</div>
                 </div>
@@ -103,7 +104,7 @@ export default function LoginPage() {
 
                 <div style={{ marginTop: 24, padding: "16px", background: "rgba(255,255,255,0.03)", borderRadius: 8, fontSize: 12, color: "var(--text-secondary)" }}>
                     <div style={{ fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>Only Admins can login</div>
-                    <div>Admins: <span style={{ color: "var(--accent-gold)" }}>Captains + Boss Cams </span> </div>
+                    <div>Admins: <span style={{ color: "var(--accent-gold)" }}>Team Captains </span> </div>
                     <div style={{ marginTop: 4 }}>How to view: <span style={{ color: "var(--info)" }}>Click Guest button yall</span> </div>
                 </div>
             </div>

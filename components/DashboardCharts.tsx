@@ -20,9 +20,7 @@ interface AttendanceTrendData {
 
 interface AttendanceBreakdown {
     present: number;
-    late: number;
     absent: number;
-    excused: number;
 }
 
 interface DashboardChartsProps {
@@ -33,9 +31,7 @@ interface DashboardChartsProps {
 export default function DashboardCharts({ attendanceTrend, breakdown }: DashboardChartsProps) {
     const breakdownData = [
         { name: "Present", value: breakdown.present, fill: "#22c55e" },
-        { name: "Late", value: breakdown.late, fill: "#f59e0b" },
         { name: "Absent", value: breakdown.absent, fill: "#ef4444" },
-        { name: "Excused", value: breakdown.excused, fill: "#94a3b8" },
     ];
 
     return (
@@ -46,7 +42,7 @@ export default function DashboardCharts({ attendanceTrend, breakdown }: Dashboar
                 </div>
 
                 <div style={{ height: 260 }}>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 640, height: 260 }}>
                         <LineChart data={attendanceTrend}>
                             <defs>
                                 <linearGradient id="attendanceGradient" x1="0" y1="0" x2="0" y2="1">
@@ -115,7 +111,7 @@ export default function DashboardCharts({ attendanceTrend, breakdown }: Dashboar
                 </div>
 
                 <div style={{ height: 260 }}>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 640, height: 260 }}>
                         <BarChart data={breakdownData}>
                             <CartesianGrid strokeDasharray="3 6" stroke="#e5eaf1" />
 

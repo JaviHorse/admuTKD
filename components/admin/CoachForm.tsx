@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createCoach, updateCoach, deleteCoach } from "@/app/actions/coaches";
+import ProfileImagePicker from "./ProfileImagePicker";
 
 interface CoachFormProps {
     coach?: {
@@ -10,6 +11,7 @@ interface CoachFormProps {
         fullName: string;
         roleTitle?: string | null;
         isActive: boolean;
+        profileImageUrl?: string | null;
     };
 }
 
@@ -20,6 +22,7 @@ export default function CoachForm({ coach }: CoachFormProps) {
     const [fullName, setFullName] = useState(coach?.fullName || "");
     const [roleTitle, setRoleTitle] = useState(coach?.roleTitle || "");
     const [isActive, setIsActive] = useState(coach?.isActive ?? true);
+    const [profileImageUrl, setProfileImageUrl] = useState(coach?.profileImageUrl || "");
     const [loading, setLoading] = useState(false);
 
     async function handleSubmit(e: React.FormEvent) {
@@ -27,13 +30,14 @@ export default function CoachForm({ coach }: CoachFormProps) {
         setLoading(true);
         try {
             if (coach) {
-                await updateCoach(coach.id, { fullName, roleTitle: roleTitle || undefined, isActive });
+                await updateCoach(coach.id, { fullName, roleTitle: roleTitle || undefined, isActive, profileImageUrl: profileImageUrl || null });
                 setIsEditing(false);
             } else {
-                await createCoach({ fullName, roleTitle: roleTitle || undefined, isActive });
+                await createCoach({ fullName, roleTitle: roleTitle || undefined, isActive, profileImageUrl: profileImageUrl || null });
                 setFullName("");
                 setRoleTitle("");
                 setIsActive(true);
+                setProfileImageUrl("");
             }
             router.refresh();
         } catch (error) {
@@ -75,6 +79,7 @@ export default function CoachForm({ coach }: CoachFormProps) {
 
     return (
         <form onSubmit={handleSubmit}>
+            <div className="form-group" style={{ marginBottom: 18 }}><label className="form-label">Profile photo</label><ProfileImagePicker value={profileImageUrl} name={fullName} onChange={setProfileImageUrl} /></div>
             <div className="grid-2" style={{ marginBottom: 16 }}>
                 <div className="form-group">
                     <label className="form-label">Full Name</label>
@@ -123,6 +128,7 @@ export default function CoachForm({ coach }: CoachFormProps) {
                             setFullName(coach.fullName);
                             setRoleTitle(coach.roleTitle || "");
                             setIsActive(coach.isActive);
+                            setProfileImageUrl(coach.profileImageUrl || "");
                         }}
                     >
                         Cancel

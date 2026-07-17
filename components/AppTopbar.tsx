@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Session } from "next-auth";
 import GlobalSearch from "./GlobalSearch";
+import Image from "next/image";
 
 const pageNames: Record<string, string> = {
     dashboard: "Overview",
@@ -13,6 +14,7 @@ const pageNames: Record<string, string> = {
     sessions: "Training",
     competitions: "Competitions",
     admin: "Management",
+    admins: "Administrator Profile",
 };
 
 const primaryActions: Record<string, { label: string; href: string }> = {
@@ -55,7 +57,7 @@ export default function AppTopbar({ session }: { session: Session | null }) {
                 <button className="topbar-icon" aria-label="Notifications">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
                 </button>
-                <div className="topbar-avatar" title={session?.user?.name || "Guest Visitor"}>{initials}</div>
+                {isAdmin ? <Link href="/admin/profile" className="topbar-profile-link" aria-label="Open my profile"><span className="topbar-avatar" title={session?.user?.name || "Administrator"}>{session?.user?.profileImageUrl ? <Image src={session.user.profileImageUrl} alt="" fill sizes="36px" unoptimized /> : initials}</span></Link> : <span className="topbar-avatar" title="Guest Visitor">{initials}</span>}
             </div>
         </header>
     );

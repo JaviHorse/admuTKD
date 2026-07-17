@@ -29,9 +29,20 @@ export default function GlobalSearch({ onResultClick }: GlobalSearchProps) {
         }
 
         const search = async () => {
+            const trimmedQuery = query.trim();
+            if (trimmedQuery.length < 2) {
+                setResults([]);
+                setIsOpen(false);
+                return;
+            }
+
             setLoading(true);
             try {
-                const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const res = await fetch("/api/search", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ q: trimmedQuery.slice(0, 100) }),
+                });
                 const data = await res.json();
                 setResults(data.results || []);
                 setIsOpen(data.results && data.results.length > 0);

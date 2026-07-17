@@ -1,6 +1,7 @@
 import { getPlayers } from "@/app/actions/players";
 import Link from "next/link";
 import PlayerForm from "@/components/admin/PlayerForm";
+import Image from "next/image";
 
 export default async function ManagePlayersPage() {
     const players = await getPlayers();
@@ -43,7 +44,7 @@ export default async function ManagePlayersPage() {
                             {players.length > 0 ? (
                                 players.map((player) => (
                                     <tr key={player.id}>
-                                        <td>{player.fullName}</td>
+                                        <td><div className="table-link"><span className="avatar-initial roster-avatar">{player.profileImageUrl ? <Image src={player.profileImageUrl} alt="" fill sizes="34px" unoptimized /> : player.fullName.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span>{player.fullName}</div></td>
                                         <td>
                                             <span className={`badge ${player.isActive ? "badge-active" : "badge-inactive"}`}>
                                                 {player.isActive ? "Active" : "Inactive"}

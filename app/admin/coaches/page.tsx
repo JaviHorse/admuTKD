@@ -1,6 +1,7 @@
 import { getCoaches } from "@/app/actions/coaches";
 import Link from "next/link";
 import CoachForm from "@/components/admin/CoachForm";
+import Image from "next/image";
 
 export default async function ManageCoachesPage() {
     const coaches = await getCoaches();
@@ -44,7 +45,7 @@ export default async function ManageCoachesPage() {
                             {coaches.length > 0 ? (
                                 coaches.map((coach) => (
                                     <tr key={coach.id}>
-                                        <td>{coach.fullName}</td>
+                                        <td><div className="table-link"><span className="avatar-initial roster-avatar">{coach.profileImageUrl ? <Image src={coach.profileImageUrl} alt="" fill sizes="34px" unoptimized /> : coach.fullName.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span>{coach.fullName}</div></td>
                                         <td>{coach.roleTitle || "—"}</td>
                                         <td>
                                             <span className={`badge ${coach.isActive ? "badge-active" : "badge-inactive"}`}>

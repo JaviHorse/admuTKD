@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPlayer, updatePlayer, deletePlayer } from "@/app/actions/players";
+import ProfileImagePicker from "./ProfileImagePicker";
 
 interface PlayerFormProps {
     player?: {
         id: string;
         fullName: string;
         isActive: boolean;
+        profileImageUrl?: string | null;
     };
 }
 
@@ -18,6 +20,7 @@ export default function PlayerForm({ player }: PlayerFormProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [fullName, setFullName] = useState(player?.fullName || "");
     const [isActive, setIsActive] = useState(player?.isActive ?? true);
+    const [profileImageUrl, setProfileImageUrl] = useState(player?.profileImageUrl || "");
     const [loading, setLoading] = useState(false);
 
     async function handleSubmit(e: React.FormEvent) {
@@ -25,12 +28,13 @@ export default function PlayerForm({ player }: PlayerFormProps) {
         setLoading(true);
         try {
             if (player) {
-                await updatePlayer(player.id, { fullName, isActive });
+                await updatePlayer(player.id, { fullName, isActive, profileImageUrl: profileImageUrl || null });
                 setIsEditing(false);
             } else {
-                await createPlayer({ fullName, isActive });
+                await createPlayer({ fullName, isActive, profileImageUrl: profileImageUrl || null });
                 setFullName("");
                 setIsActive(true);
+                setProfileImageUrl("");
             }
             router.refresh();
         } catch (error) {
@@ -72,6 +76,7 @@ export default function PlayerForm({ player }: PlayerFormProps) {
 
     return (
         <form onSubmit={handleSubmit}>
+            <div className="form-group" style={{ marginBottom: 18 }}><label className="form-label">Profile photo</label><ProfileImagePicker value={profileImageUrl} name={fullName} onChange={setProfileImageUrl} /></div>
             <div className="grid-2" style={{ marginBottom: 16 }}>
                 <div className="form-group">
                     <label className="form-label">Full Name</label>
@@ -109,6 +114,7 @@ export default function PlayerForm({ player }: PlayerFormProps) {
                             setIsEditing(false);
                             setFullName(player.fullName);
                             setIsActive(player.isActive);
+                            setProfileImageUrl(player.profileImageUrl || "");
                         }}
                     >
                         Cancel

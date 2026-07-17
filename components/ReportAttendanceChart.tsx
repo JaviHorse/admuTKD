@@ -3,7 +3,7 @@
 import { Bar, BarChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
 
 export default function ReportAttendanceChart({ data }: { data: { name: string; rate: number }[] }) {
-    return <ResponsiveContainer width="100%" height="100%"><BarChart data={data} layout="vertical" margin={{ left: 18, right: 22 }}>
+    return <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 900, height: 350 }}><BarChart data={data} layout="vertical" margin={{ left: 18, right: 22 }}>
         <CartesianGrid stroke="#e7ecf3" horizontal={false} />
         <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} tick={{ fill: "#7a889b", fontSize: 10 }} axisLine={false} tickLine={false} />
         <YAxis type="category" dataKey="name" width={112} tick={{ fill: "#40516a", fontSize: 10 }} axisLine={false} tickLine={false} />
