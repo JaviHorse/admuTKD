@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 function validateImage(value?: string | null) {
@@ -35,4 +36,25 @@ export async function deleteDashboardPost(id: string) {
     if (session?.user?.role !== "ADMIN") throw new Error("Unauthorized");
     await prisma.dashboardPost.deleteMany({ where: { id } });
     revalidatePath("/dashboard");
+}
+
+export async function likeDashboardPost(id: string) {
+    const session = await auth();
+    const cookieStore = await cookies();
+    if (session?.user?.role === "ADMIN" || !cookieStore.has("guest_access")) {
+        throw new Error("Only guest visitors can like team updates.");
+    }
+    if (!/^[a-zA-Z0-9_-]{10,64}$/.test(id)) throw new Error("Invalid post.");
+
+    try {
+        const post = await prisma.dashboardPost.update({
+            where: { id },
+            data: { likeCount: { increment: 1 } },
+            select: { likeCount: true },
+        });
+        revalidatePath("/dashboard");
+        return post.likeCount;
+    } catch {
+        throw new Error("This post is no longer available.");
+    }
 }

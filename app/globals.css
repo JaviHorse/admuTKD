@@ -1478,6 +1478,15 @@ tbody td { color: #273750; padding-top: 14px; padding-bottom: 14px; }
 .post-delete-button:hover { color: #c34035; border-color: #e9bbb7; background: #fff5f4; }
 .dashboard-post-copy { margin: 14px 2px; color: #30425b; font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
 .dashboard-post-image { aspect-ratio: 16 / 9; margin-top: 13px; }
+.dashboard-post-actions { display: flex; align-items: center; min-height: 30px; margin-top: 13px; padding-top: 11px; border-top: 1px solid #e7edf4; }
+.post-like-button, .post-like-count { display: inline-flex; align-items: center; gap: 6px; color: #7d8a9d; font-size: 11px; font-weight: 750; }
+.post-like-button { min-width: 48px; padding: 5px 9px; border: 0; border-radius: 9px; background: transparent; cursor: pointer; }
+.post-like-button:hover { color: #d33c5b; background: #fff0f3; }
+.post-like-button:disabled { cursor: wait; opacity: .65; }
+.post-like-button svg, .post-like-count svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.post-like-button.is-liked { color: #d92f54; background: #fff0f3; }
+.post-like-button.is-liked svg, .post-like-count svg { fill: currentColor; }
+.post-like-count { padding: 5px 9px; color: #d04a64; }
 .post-empty { display: flex; align-items: center; gap: 13px; padding: 20px; color: #7f8da1; }
 .post-empty > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; color: #0756c7; background: #e7f0fd; font-size: 11px; font-weight: 900; }
 .post-empty strong { display: block; color: #354760; font-size: 12px; }.post-empty p { margin-top: 2px; font-size: 10px; }

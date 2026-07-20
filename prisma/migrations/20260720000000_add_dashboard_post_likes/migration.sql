@@ -1,0 +1,2 @@
+ALTER TABLE "DashboardPost"
+ADD COLUMN "likeCount" INTEGER NOT NULL DEFAULT 0;

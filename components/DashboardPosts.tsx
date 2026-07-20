@@ -2,14 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createDashboardPost, deleteDashboardPost } from "@/app/actions/dashboardPosts";
+import { createDashboardPost, deleteDashboardPost, likeDashboardPost } from "@/app/actions/dashboardPosts";
 
 type Post = {
     id: string;
     content: string | null;
     imageUrl: string | null;
+    likeCount: number;
     createdAt: string;
     author: { id: string; name: string; profileImageUrl?: string | null };
 };
@@ -31,6 +32,19 @@ export default function DashboardPosts({ posts, isAdmin, adminName, adminImage }
     const [error, setError] = useState("");
     const [publishing, setPublishing] = useState(false);
     const [deletingId, setDeletingId] = useState("");
+    const [likeCounts, setLikeCounts] = useState<Record<string, number>>(() => Object.fromEntries(posts.map((post) => [post.id, post.likeCount])));
+    const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+    const [likingId, setLikingId] = useState("");
+    const [likeError, setLikeError] = useState("");
+
+    useEffect(() => {
+        try {
+            const stored = JSON.parse(localStorage.getItem("liked-dashboard-posts") || "[]");
+            if (Array.isArray(stored)) setLikedPosts(new Set(stored.filter((id): id is string => typeof id === "string")));
+        } catch {
+            localStorage.removeItem("liked-dashboard-posts");
+        }
+    }, []);
 
     async function processImage(file?: File) {
         setError("");
@@ -85,6 +99,27 @@ export default function DashboardPosts({ posts, isAdmin, adminName, adminImage }
         }
     }
 
+    async function likePost(id: string) {
+        if (likingId) return;
+        setLikeError("");
+        setLikingId(id);
+        setLikeCounts((counts) => ({ ...counts, [id]: (counts[id] || 0) + 1 }));
+        try {
+            const likeCount = await likeDashboardPost(id);
+            setLikeCounts((counts) => ({ ...counts, [id]: likeCount }));
+            setLikedPosts((current) => {
+                const next = new Set(current).add(id);
+                localStorage.setItem("liked-dashboard-posts", JSON.stringify([...next]));
+                return next;
+            });
+        } catch (cause) {
+            setLikeCounts((counts) => ({ ...counts, [id]: Math.max(0, (counts[id] || 1) - 1) }));
+            setLikeError(cause instanceof Error ? cause.message : "Could not like this post.");
+        } finally {
+            setLikingId("");
+        }
+    }
+
     return <section className="dashboard-posts-section">
         <div className="dashboard-posts-heading">
             <div><span className="eyebrow">Team bulletin</span><h2>Team updates</h2><p>Announcements and moments shared by team administrators.</p></div>
@@ -98,10 +133,20 @@ export default function DashboardPosts({ posts, isAdmin, adminName, adminImage }
             {error && <div className="post-error">{error}</div>}
         </div>}
         <div className="dashboard-post-feed">
+            {likeError && <div className="post-error" role="alert">{likeError}</div>}
             {posts.length ? posts.map((post) => <article className="dashboard-post surface" key={post.id}>
                 <header><Link href={`/admins/${post.author.id}`} className="post-author-link"><PostAvatar name={post.author.name} imageUrl={post.author.profileImageUrl} /><div><strong>{post.author.name}</strong><span>Administrator · {formatPostedAt(post.createdAt)}</span></div></Link>{isAdmin && <button type="button" className="post-delete-button" onClick={() => removePost(post.id)} disabled={deletingId === post.id} aria-label={`Delete post by ${post.author.name}`}>{deletingId === post.id ? "…" : "×"}</button>}</header>
                 {post.content && <p className="dashboard-post-copy">{post.content}</p>}
                 {post.imageUrl && <div className="dashboard-post-image"><Image src={post.imageUrl} alt={`Update posted by ${post.author.name}`} fill sizes="(max-width: 768px) 100vw, 760px" unoptimized /></div>}
+                <footer className="dashboard-post-actions">
+                    {!isAdmin ? <button type="button" className={`post-like-button${likedPosts.has(post.id) ? " is-liked" : ""}`} onClick={() => likePost(post.id)} disabled={likingId === post.id} aria-label={`Like this post. ${likeCounts[post.id] || 0} likes`} aria-pressed={likedPosts.has(post.id)}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" /></svg>
+                        <span>{likeCounts[post.id] || 0}</span>
+                    </button> : <span className="post-like-count" aria-label={`${likeCounts[post.id] || 0} likes`}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" /></svg>
+                        <span>{likeCounts[post.id] || 0}</span>
+                    </span>}
+                </footer>
             </article>) : <div className="post-empty surface"><span>AT</span><div><strong>No team updates yet</strong><p>Announcements from team administrators will appear here.</p></div></div>}
         </div>
     </section>;
