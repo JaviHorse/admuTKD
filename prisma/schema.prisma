@@ -23,6 +23,7 @@ model DashboardPost {
   id        String   @id @default(cuid())
   content   String?
   imageUrl  String?
+  likeCount Int      @default(0)
   authorId  String
   createdAt DateTime @default(now())
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
