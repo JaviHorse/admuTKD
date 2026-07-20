@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { getSemesters, getActiveSemester } from "@/app/actions/semesters";
-import { getTeamAttendanceStats, getPlayerAttendanceStats, getSessionsInSemester, getCompetitionsInSemester, formatRate } from "@/lib/computations";
+import { getTeamAttendanceStats, getPlayerAttendanceStats, getCompetitionsInSemester, formatRate } from "@/lib/computations";
 import SemesterSelector from "@/components/SemesterSelector";
-import DashboardCharts from "@/components/DashboardCharts";
 import UaapCountdown from "@/components/UaapCountdown";
 import { getUaapDate, isTrainingCancelled } from "@/app/actions/settings";
 import { getScheduledTrainingDay } from "@/lib/trainingSchedule";
@@ -24,40 +23,29 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
     if (!selectedSemesterId) return <div className="dash"><div className="dash-inner"><div className="empty-state dashboard-empty"><div className="empty-state-icon">AY</div><h1 className="page-title">Set up your first school year</h1><p className="page-subtitle">Create a school year to start tracking training, attendance, and competition readiness.</p>{userSession?.user?.role === "ADMIN" && <Link href="/admin/semesters" className="btn btn-primary">Create school year</Link>}</div></div></div>;
 
-    const [stats, playerStats, sessions, competitions, uaapDate, activePlayers, trainingCancelled, dashboardPosts] = await Promise.all([
+    const [stats, playerStats, competitions, uaapDate, activePlayers, trainingCancelled, dashboardPosts] = await Promise.all([
         getTeamAttendanceStats(selectedSemesterId),
         getPlayerAttendanceStats(selectedSemesterId),
-        getSessionsInSemester(selectedSemesterId),
         getCompetitionsInSemester(selectedSemesterId),
         getUaapDate(),
         prisma.player.count({ where: { isActive: true } }),
         isTrainingCancelled(scheduledTraining.dateKey),
         getDashboardPosts(),
     ]);
-    const sessionIds = sessions.map((session) => session.id);
-    const [allRecords, scheduledSession] = await Promise.all([
-        sessionIds.length ? prisma.attendanceRecord.findMany({ where: { sessionId: { in: sessionIds } } }) : [],
-        prisma.session.findFirst({ where: { sessionDate: { gte: scheduledTraining.start, lte: scheduledTraining.end } }, orderBy: { sessionDate: "asc" }, include: { coaches: { include: { coach: true } }, attendance: true } }),
-    ]);
+    const scheduledSession = await prisma.session.findFirst({
+        where: { sessionDate: { gte: scheduledTraining.start, lte: scheduledTraining.end } },
+        orderBy: { sessionDate: "asc" },
+        include: { coaches: { include: { coach: true } }, attendance: true },
+    });
     const now = new Date();
     const upcomingCompetitions = competitions.filter((competition) => competition.competitionDate >= now).slice(0, 3);
-    const attendanceTrend = sessions.map((training) => {
-        const records = allRecords.filter((record) => record.sessionId === training.id);
-        const present = records.filter((record) => record.status === "PRESENT" || record.status === "LATE").length;
-        return { date: training.sessionDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }), attendance: records.length ? Number((present / records.length * 100).toFixed(1)) : 0 };
-    });
     const qualifiedPlayers = playerStats.filter((player) => player.total >= 1);
     const readinessTarget = .75;
     const readyPlayers = qualifiedPlayers.filter((player) => player.rate >= readinessTarget).length;
     const readinessRate = qualifiedPlayers.length ? readyPlayers / qualifiedPlayers.length : 0;
     const needsAttention = qualifiedPlayers.filter((player) => player.rate < readinessTarget).sort((a, b) => a.rate - b.rate).slice(0, 5);
     const consistencyLeaders = [...qualifiedPlayers].sort((a, b) => b.rate - a.rate || b.total - a.total).slice(0, 5);
-    const breakdown = {
-        present: playerStats.reduce((sum, player) => sum + player.present + player.late, 0),
-        absent: playerStats.reduce((sum, player) => sum + player.absent + player.excused, 0),
-    };
-    const binaryTotal = breakdown.present + breakdown.absent;
-    const dashboardAttendanceRate = binaryTotal ? breakdown.present / binaryTotal : stats.attendanceRate;
+    const dashboardAttendanceRate = stats.attendanceRate;
     const isAdmin = userSession?.user?.role === "ADMIN";
     const sessionActionHref = trainingCancelled ? "/admin/settings" : scheduledSession ? `/admin/sessions/${scheduledSession.id}/attendance` : "/admin/sessions/new";
     const sessionActionLabel = trainingCancelled ? "Manage cancellation" : scheduledSession ? "Mark attendance" : "Create session";
@@ -72,7 +60,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <div className="priority-card"><div className="priority-icon"><Icon><circle cx="12" cy="8" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></Icon></div><div><span>Active athletes</span><strong>{activePlayers}</strong><small>{readyPlayers} meeting the 75% attendance target</small></div></div>
         </section>
 
-        <div className="dashboard-main-grid"><div className="dashboard-main-column"><DashboardCharts attendanceTrend={attendanceTrend} breakdown={breakdown}/><DashboardPosts posts={dashboardPosts.map((post) => ({ ...post, createdAt: post.createdAt.toISOString() }))} isAdmin={isAdmin} adminName={userSession?.user?.name} adminImage={userSession?.user?.profileImageUrl}/><UaapCountdown uaapDate={uaapDate}/></div><aside className="dashboard-rail">
+        <div className="dashboard-main-grid"><div className="dashboard-main-column"><DashboardPosts posts={dashboardPosts.map((post) => ({ ...post, createdAt: post.createdAt.toISOString() }))} isAdmin={isAdmin} adminName={userSession?.user?.name} adminImage={userSession?.user?.profileImageUrl}/><UaapCountdown uaapDate={uaapDate}/></div><aside className="dashboard-rail">
             <section className="card rail-card"><div className="card-header"><div><span className="eyebrow">Coming up</span><h2 className="card-title">Competition calendar</h2></div><Link href="/competitions" className="text-link">View all</Link></div>{upcomingCompetitions.length ? <div className="event-list">{upcomingCompetitions.map((competition) => <Link href={`/competitions/${competition.id}`} className="event-item" key={competition.id}><div className="event-date"><b>{competition.competitionDate.toLocaleDateString("en-PH", { day: "2-digit" })}</b><span>{competition.competitionDate.toLocaleDateString("en-PH", { month: "short" })}</span></div><div><strong>{competition.name}</strong><small>{competition.location || "Venue TBA"}</small></div><span className="event-arrow">→</span></Link>)}</div> : <div className="compact-empty"><span>🏆</span><strong>No upcoming competitions</strong><p>{isAdmin ? "Add an event to start tracking team readiness." : "No upcoming competitions are scheduled."}</p>{isAdmin && <Link href="/admin/competitions/new" className="text-link">Create competition →</Link>}</div>}</section>
             <section className="card rail-card"><div className="card-header"><div><span className="eyebrow">Attendance pulse</span><h2 className="card-title">Athletes to review</h2></div><span className="status-dot">{needsAttention.length}</span></div>{needsAttention.length ? <div className="player-pulse-list">{needsAttention.map((player) => <Link href={`/players/${player.playerId}`} key={player.playerId}><span className="player-initial">{player.fullName.charAt(0)}</span><div><strong>{player.fullName}</strong><small>{player.absent + player.excused} missed sessions</small></div><b>{formatRate(player.rate)}</b></Link>)}</div> : <div className="compact-empty"><strong>Everyone is on track</strong><p>No players are below the 75% attendance target.</p></div>}</section>
             <section className="card rail-card"><div className="card-header"><div><span className="eyebrow">Consistency</span><h2 className="card-title">Training leaders</h2></div></div><div className="leader-list">{consistencyLeaders.length ? consistencyLeaders.map((player, index) => <Link href={`/players/${player.playerId}`} key={player.playerId}><span>{String(index + 1).padStart(2, "0")}</span><strong>{player.fullName}</strong><b>{formatRate(player.rate)}</b></Link>) : <div className="compact-empty"><p>Attendance leaders will appear after the first session.</p></div>}</div></section>
