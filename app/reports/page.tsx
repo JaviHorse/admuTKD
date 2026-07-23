@@ -4,6 +4,7 @@ import { getPlayers } from "@/app/actions/players";
 import SemesterSelector from "@/components/SemesterSelector";
 import ReportAttendanceChart from "@/components/ReportAttendanceChart";
 import Link from "next/link";
+import AttendanceExport from "@/components/AttendanceExport";
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ semesterId?: string }> }) {
     const { semesterId } = await searchParams;
@@ -20,7 +21,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     const chartData = tracked.sort((a, b) => (b.attendance?.rate || 0) - (a.attendance?.rate || 0)).map((player) => ({ name: player.fullName, rate: Number(((player.attendance?.rate || 0) * 100).toFixed(1)) }));
 
     return <div>
-        <header className="compact-page-header"><div><span className="eyebrow">Analytics workspace</span><h1>Reports</h1><p><strong>{semesters.find((item) => item.id === selectedSemesterId)?.name}</strong> · Attendance and competition performance</p></div><div className="page-header-actions"><SemesterSelector semesters={semesters} selectedId={selectedSemesterId} /><button className="btn btn-secondary" type="button">Export report</button></div></header>
+        <header className="compact-page-header"><div><span className="eyebrow">Analytics workspace</span><h1>Reports</h1><p><strong>{semesters.find((item) => item.id === selectedSemesterId)?.name}</strong> · Attendance and competition performance</p></div><div className="page-header-actions"><SemesterSelector semesters={semesters} selectedId={selectedSemesterId} /></div></header>
+        <AttendanceExport schoolYears={semesters.map(({ id, name }) => ({ id, name }))} initialSchoolYearId={selectedSemesterId} />
         <section className="metric-grid">
             <div className="metric-card accent"><span className="metric-label">Team attendance</span><strong className="metric-value">{formatRate(teamStats.attendanceRate)}</strong><span className="metric-note">75% team target</span></div>
             <div className="metric-card"><span className="metric-label">Training sessions</span><strong className="metric-value">{teamStats.totalSessions}</strong><span className="metric-note">in selected school year</span></div>
